@@ -1,7 +1,19 @@
 # wmhelpers
 
+![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)
+![R version](https://img.shields.io/badge/R-%E2%89%A5%204.2-blue.svg)
+![GitHub last commit](https://img.shields.io/github/last-commit/WM/wmhelpers)
+![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
 
-**wmhelpers** is an internal R package developed by **WildMon (WM)** to support and standardize ecological analysis workflows across projects and collaborators.
+
+<p align="left">
+  <img src="inst/figures/Wildmon-Horizontal-logo-white-blue-full.png"
+       alt="WildMon logo"
+       width="220"/>
+</p>
+
+
+**wmhelpers** is an internal R package developed by **WildMon (WM)** Quantitative Ecology Team to support and standardize ecological analysis workflows across projects and collaborators.
 
 The package provides a growing collection of **helper functions** to manipulate, prepare, quality-check, and automate data processing steps commonly required in ecological analyses using data derived from multiple monitoring technologies.
 
@@ -58,29 +70,15 @@ The table below lists the currently available exported helpers.
 | `read_issue_sites()` | Read and standardize site exclusion flags from a Project Tracking Google Sheets document |
 
 > 📌 Detailed documentation for each function is available via R help:
->
-> ```r
-> ?read_issue_sites
-> ```
 
 ---
 
-## 📖 Documentation philosophy
-
-* The **README** provides a high-level overview of the package and its scope
-* **Each function is fully documented** using Roxygen2 and accessible via `?function_name`
-* Detailed examples, parameters, and edge cases live in the function-level documentation
-
-This approach keeps the README concise while ensuring technical details remain discoverable and up to date.
-
----
 
 ## 👥 Contributors
 
 * **Jose W. Ribeiro Jr.** ("Xuleta")
 * **Thiago Bicudo**
 
-Additional contributors should be added via GitHub pull requests.
 
 ---
 
@@ -100,4 +98,4 @@ This project is released under the MIT License.
 
 ## 📬 Contact
 
-For questions, suggestions, or bug reports, please open an issue on GitHub or contact the WildMon team.
+For questions, suggestions, or bug reports, please open an issue on GitHub or contact the WildMon Quantitative Ecology team.
