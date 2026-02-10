@@ -88,11 +88,6 @@ The table below lists the currently available exported helpers.
 
 Breaking changes are avoided whenever possible and documented when unavoidable.
 
----
-
-## 📄 License
-
-This project is released under the MIT License.
 
 ---
 
