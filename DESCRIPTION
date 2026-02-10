@@ -13,4 +13,6 @@ URL: https://github.com/Xuletajr/wmhelpers
 BugReports: https://github.com/Xuletajr/wmhelpers/issues
 Imports: 
     dplyr,
-    googlesheets4
+    ggplot2,
+    googlesheets4,
+    scales
