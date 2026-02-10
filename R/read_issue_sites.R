@@ -1,0 +1,41 @@
+#' Read excluded sites from a Project Tracking Google Sheets document
+#'
+#' Reads the "Site Issues Summary" sheet from a Project Tracking Google
+#' Sheets document and returns a character vector of site identifiers
+#' marked for exclusion (`exclude == "yes"`). The comparison is case-insensitive, and returned
+#' site IDs are always converted to lower case.
+#'
+#' This helper is intended to standardize site exclusion logic across
+#' WildMon (WM) Ecological Analyses (EA) scripts and ensure consistent behavior when
+#' multiple collaborators are using shared data sources.
+#'
+#' @param sheet_url Character string. URL of the Google Sheets document.
+#' @param sheet Character string. Name of the sheet to read.
+#'   Defaults to `"Site Issues Summary"`.
+#'
+#' @return A character vector of lower-case site identifiers to be excluded.
+#'
+#' @details
+#' The function expects the sheet to contain at least two columns:
+#' \describe{
+#'   \item{name}{Site identifier.}
+#'   \item{exclude}{Logical exclusion flag (e.g. "yes", "YES", "Yes").}
+#' }
+#'
+#' Any variation in letter case for the `exclude` column is handled
+#' automatically. Values other than `"yes"` (e.g. "ok", "x", "no")
+#' are currently ignored and treated as non-excluded.
+#'
+#' @export
+#'
+read_issue_sites <- function(sheet_url, sheet = "Site Issues Summary") {
+  googlesheets4::read_sheet(sheet_url, sheet = sheet) %>%
+    dplyr::rename_with(tolower) %>%
+    dplyr::rename(sites = name) %>%
+    dplyr::mutate(
+      sites   = tolower(sites),
+      exclude = tolower(exclude)
+    ) %>%
+    dplyr::filter(exclude == "yes") %>%
+    dplyr::pull(sites)
+}
