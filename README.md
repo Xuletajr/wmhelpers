@@ -65,11 +65,15 @@ library(wmhelpers)
 
 The table below lists the currently available exported helpers.
 
-| Function             | Description                                                                              |
-| -------------------- | ---------------------------------------------------------------------------------------- |
-| `read_issue_sites()` | Read and standardize site exclusion flags from a Project Tracking Google Sheets document |
+| Function                     | Description                                                                               |
+| ---------------------------- | ----------------------------------------------------------------------------------------- |
+| `coalesce_suffix_pairs()`    | Merge duplicated columns created by multi-method joins using configurable suffix priority |
+| `read_issue_sites()`         | Read and standardize site exclusion flags from a Project Tracking Google Sheets document  |
+| `read_species_list()`        | Read, clean, and standardize species metadata from a Project Tracking sheet               |
+| `plot_bar_species()`         | Generate standardized bar plots for species detection frequency and richness summaries    |
+| `validate_detection_array()` | Validate consistency between detection arrays and raw multi-method detection data         |
 
-> 📌 Detailed documentation for each function is available via R help:
+> 📌 Detailed documentation for each function is available via R help.
 
 ---
 
