@@ -35,10 +35,10 @@
 #'
 #' @return A \code{ggplot} object.
 #'
+#' @author Jose W. Ribeiro Jr. ("Xuleta")
+#'
 #' @export
 #'
-
-
 plot_bar_species <- function(
     dat,
     value,
