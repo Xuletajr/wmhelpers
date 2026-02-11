@@ -1,11 +1,20 @@
 Package: wmhelpers
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
+Title: WildMon Ecological Workflow Helper Functions
+Version: 0.1.0
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+    c(
+        person("Jose W.", "Ribeiro Jr.", email = "josewribeiro@wildmon.ai", role = c("aut", "cre")),
+        person("Thiago", "Bicudo", email = "thiago@wildmon.ai", role = "aut")
+    )
+Description: 
+    Internal WildMon (WM) R package providing helper functions to 
+    standardize ecological data workflows. Includes utilities for 
+    reading and harmonizing project tracking data, generating 
+    standardized visualizations, coalescing multi-method datasets, 
+    and validating detection arrays across monitoring technologies 
+    such as passive acoustic monitoring, camera traps, eDNA, and 
+    citizen science data sources.
+License: MIT
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
@@ -15,4 +24,8 @@ Imports:
     dplyr,
     ggplot2,
     googlesheets4,
-    scales
+    purrr,
+    rlang,
+    scales,
+    tibble,
+    tidyr
