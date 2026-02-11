@@ -60,5 +60,5 @@ The function:
 A mismatch occurs when detection values differ or NA structure differs.
 }
 \author{
-Jose W. Ribeiro Jr.
+Thiago Bicudo
 }

@@ -38,7 +38,7 @@
 #'
 #' A mismatch occurs when detection values differ or NA structure differs.
 #'
-#' @author Jose W. Ribeiro Jr.
+#' @author Thiago Bicudo
 #'
 #' @export
 validate_detection_array <- function(species_name,
