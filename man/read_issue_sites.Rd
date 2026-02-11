@@ -36,3 +36,6 @@ Any variation in letter case for the \code{exclude} column is handled
 automatically. Values other than \code{"yes"} (e.g. "ok", "x", "no")
 are currently ignored and treated as non-excluded.
 }
+\author{
+Thiago Bicudo
+}

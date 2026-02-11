@@ -70,3 +70,6 @@ rules across projects.
 If \code{config} is provided, color settings are read from it; otherwise,
 default ggplot2 styling is applied.
 }
+\author{
+Jose W. Ribeiro Jr. ("Xuleta")
+}

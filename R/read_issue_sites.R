@@ -26,6 +26,8 @@
 #' automatically. Values other than `"yes"` (e.g. "ok", "x", "no")
 #' are currently ignored and treated as non-excluded.
 #'
+#' @author Thiago Bicudo
+#'
 #' @export
 #'
 read_issue_sites <- function(sheet_url, sheet = "Site Issues Summary") {
