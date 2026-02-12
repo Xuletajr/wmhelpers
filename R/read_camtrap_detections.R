@@ -14,11 +14,14 @@ read_camtrap_detections <- function(config,
                                     issue_cam_sites = NULL,
                                     valid_sites = NULL) {
 
+  # 🔒 Resolve path safely
+  cam_root <- normalizePath(config$camtrap, mustWork = TRUE)
+
   # 1️⃣ List all images*.csv files recursively
   cam_files <- fs::dir_ls(
-    path = config$camtrap,
+    path = cam_root,
     recurse = TRUE,
-    regexp = "^images.*\\.csv$",
+    regexp = "images.*\\.csv$",
     type = "file"
   )
 
