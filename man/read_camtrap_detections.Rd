@@ -2,31 +2,25 @@
 % Please edit documentation in R/read_camtrap_detections.R
 \name{read_camtrap_detections}
 \alias{read_camtrap_detections}
-\title{Read and clean camera trap detections}
+\title{Recursively reads all camera trap CSV files matching
+"images*.csv" inside the camtrap directory and
+standardizes detections.}
 \usage{
-read_camtrap_detections(
-  config,
-  region,
-  issue_cam_sites = NULL,
-  valid_sites = NULL
-)
+read_camtrap_detections(config, issue_cam_sites = NULL, valid_sites = NULL)
 }
 \arguments{
 \item{config}{List with project paths.}
 
-\item{region}{Subfolder inside camtrap directory (e.g., "Alalapadu").}
-
 \item{issue_cam_sites}{Optional vector of sites to exclude.}
 
-\item{valid_sites}{Optional vector of valid sites to keep.}
+\item{valid_sites}{Optional vector of valid sites to retain.}
 }
 \value{
 Tibble with columns: sites, species, date
+#' @author Jose W. Ribeiro Jr. ("Xuleta")
 }
 \description{
-Reads all camera trap CSV files starting with "images"
-and standardizes species detections.
-}
-\author{
-Jose W. Ribeiro Jr. ("Xuleta")
+Recursively reads all camera trap CSV files matching
+"images*.csv" inside the camtrap directory and
+standardizes detections.
 }
