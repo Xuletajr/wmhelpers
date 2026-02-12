@@ -68,6 +68,9 @@ The table below lists the currently available exported helpers.
 | Function                     | Description                                                                               |
 | ---------------------------- | ----------------------------------------------------------------------------------------- |
 | `coalesce_suffix_pairs()`    | Merge duplicated columns created by multi-method joins using configurable suffix priority |
+| `read_audio_detections()`    | Read and clean confirmed acoustic detections within deployment windows                    |
+| `read_camtrap_detections()`  | Read and clean camera trap detections from all `images*.csv` files                        |
+| `read_deployment_file()`     | Read and standardize deployment metadata (start/end dates per site)                       |
 | `read_issue_sites()`         | Read and standardize site exclusion flags from a Project Tracking Google Sheets document  |
 | `read_species_list()`        | Read, clean, and standardize species metadata from a Project Tracking sheet               |
 | `plot_bar_species()`         | Generate standardized bar plots for species detection frequency and richness summaries    |
