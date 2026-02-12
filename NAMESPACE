@@ -3,6 +3,7 @@
 export(coalesce_suffix_pairs)
 export(plot_bar_species)
 export(read_audio_detections)
+export(read_camtrap_detections)
 export(read_deployment_file)
 export(read_issue_sites)
 export(read_species_list)
