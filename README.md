@@ -67,7 +67,7 @@ The table below lists the currently available exported helpers.
 
 | Function                     | Description                                                                               |
 | ---------------------------- | ----------------------------------------------------------------------------------------- |
-| `build_detection_array()`    | Construct a 3D detection array (species × sites × dates) with effort-aware coding (1 = detection, 0 = sampled, NA = no effort), automatically removing unsampled dates |
+| `build_detection_array()`    | onstruct a 3D detection array (species × sites × dates) where 1 = detection, 0 = sampled with no detection, and NA = no sampling effort |
 | `coalesce_suffix_pairs()`    | Merge duplicated columns created by multi-method joins using configurable suffix priority |
 | `read_audio_detections()`    | Read and clean confirmed acoustic detections within deployment windows                    |
 | `read_camtrap_detections()`  | Read and clean camera trap detections from all `images*.csv` files                        |
