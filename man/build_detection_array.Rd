@@ -2,69 +2,74 @@
 % Please edit documentation in R/build_detection_3Darray.R
 \name{build_detection_array}
 \alias{build_detection_array}
-\title{Build 3D Detection Array for Multi-Species Occupancy Models}
+\title{Build a 3D Detection Array for Multi-species Occupancy Models}
 \usage{
-build_detection_array(
-  detections,
-  deployment,
-  species_col,
-  site_col,
-  date_col,
-  date_seq
-)
+build_detection_array(df, deploy)
 }
 \arguments{
-\item{detections}{A data.frame or tibble containing detection records.}
+\item{df}{A data frame of detections containing:
+\describe{
+\item{species}{Character. Species name.}
+\item{sites}{Character. Site identifier.}
+\item{date}{Date. Sampling date.}
+}}
 
-\item{deployment}{A data.frame or tibble containing deployment information.
-Must contain columns: \code{sites}, \code{point_name}, \code{start_date}, \code{end_date}.}
-
-\item{species_col}{Character. Column name in \code{detections} with species IDs.}
-
-\item{site_col}{Character. Column name in \code{detections} with site IDs.}
-
-\item{date_col}{Character. Column name in \code{detections} with detection dates.}
-
-\item{date_seq}{A vector of Dates defining replicate sampling occasions.}
+\item{deploy}{A data frame containing deployment metadata with:
+\describe{
+\item{sites}{Character. Site identifier.}
+\item{start_date}{Date. Start of sampling period.}
+\item{end_date}{Date. End of sampling period.}
+}}
 }
 \value{
-A named list with:
+A list with:
 \describe{
-\item{y}{3D integer array (species × sites × dates)}
-\item{species}{Character vector of species names}
-\item{deployment}{Deployment data.frame used}
-\item{date_seq}{Filtered date sequence used in the array}
+\item{y}{3D array (species × sites × dates).}
+\item{species}{Character vector of species names.}
+\item{sites}{Character vector of site names.}
+\item{date_seq}{Date vector of full temporal sequence.}
 }
 }
 \description{
-Creates a 3D detection array (species × sites × dates) suitable for
-multi-species occupancy models such as \code{msPGOcc()} and \code{intMsPGOcc()}.
+Constructs a species × sites × dates detection array from
+detection records and deployment metadata.
 }
 \details{
-The array is initialized with \code{NA} (no sampling effort). Dates within each
-deployment period are set to \code{0} (sampling occurred, no detection). Observed
-detections are set to \code{1}.
-
-Dates containing only \code{NA} values (i.e., no sampling effort across all sites)
-are automatically removed from the final array.
-
-Coding scheme:
+The function creates a standardized 3D array where:
 \itemize{
-\item 1 = detection
-\item 0 = sampling effort, no detection
-\item NA = no sampling effort
+\item \strong{NA} = no sampling effort (outside deployment period)
+\item \strong{0}  = sampling effort occurred but no detection
+\item \strong{1}  = species detected
+}
+
+All species share the same sampling-effort structure (NA mask),
+ensuring consistency required for hierarchical multi-species
+occupancy models.
+
+The temporal dimension of the array is defined globally using the
+minimum start date and maximum end date across all deployments.
+
+For each site:
+\itemize{
+\item Dates within the deployment interval are initialized as 0
+(sampling effort present).
+\item Dates outside the deployment interval remain NA.
+}
+
+Species detections are then inserted as 1 in the corresponding
+species-site-date cells.
+
+This ensures:
+\itemize{
+\item Identical NA structure across species
+\item Site-specific sampling durations
+\item Correct 0/1 detection coding
 }
 }
 \examples{
-\dontrun{
 audio_array <- build_detection_array(
-  detections = audioData,
-  deployment = deploy_audio_filt,
-  species_col = "species",
-  site_col = "sites",
-  date_col = "date",
-  date_seq = date_seq_aud
+  df     = audio_filt,
+  deploy = deploy_audio_filt
 )
-}
 
 }
