@@ -43,7 +43,6 @@
 #' @author Jose W. Ribeiro Jr. ("Xuleta")
 #'
 #' @export
-#' @export
 read_camtrap_detections <- function(config,
                                     deployment_camera,
                                     issue_cam_sites = NULL,
@@ -51,8 +50,7 @@ read_camtrap_detections <- function(config,
                                     export_out_of_period = FALSE,
                                     output_path = NULL) {
 
-  cam_root <- normalizePath(config$camtrap,
-                            mustWork = TRUE)
+  cam_root <- normalizePath(config$camtrap, mustWork = TRUE)
 
   cam_files <- fs::dir_ls(
     path = cam_root,
@@ -65,6 +63,7 @@ read_camtrap_detections <- function(config,
     stop("No camera trap files matching 'images*.csv' found.")
   }
 
+  # 🔹 Read and standardize raw detections
   raw_data <- purrr::map_dfr(
     cam_files,
     readr::read_csv,
@@ -82,28 +81,27 @@ read_camtrap_detections <- function(config,
                       "no CV results", "No CV Result")
     )
 
+  # 🔹 Optional filters
   if (!is.null(valid_sites)) {
-    raw_data <- dplyr::filter(raw_data,
-                              sites %in% valid_sites)
+    raw_data <- dplyr::filter(raw_data, sites %in% valid_sites)
   }
 
   if (!is.null(issue_cam_sites)) {
-    raw_data <- dplyr::filter(raw_data,
-                              !sites %in% issue_cam_sites)
+    raw_data <- dplyr::filter(raw_data, !sites %in% issue_cam_sites)
   }
 
   raw_data <- raw_data %>%
     dplyr::distinct(sites, date, species)
 
   # 🔎 Join with deployment to validate period
-  joined <- detections %>%
+  joined <- raw_data %>%
     dplyr::left_join(
       deployment_camera %>%
         dplyr::select(sites, start_date, end_date),
       by = "sites"
     )
 
-  # 🔎 Identify out of period (including missing deployment)
+  # 🔎 Identify out-of-period (including missing deployment)
   out_of_period <- joined %>%
     dplyr::filter(
       is.na(start_date) |
