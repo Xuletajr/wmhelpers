@@ -95,20 +95,36 @@ read_camtrap_detections <- function(config,
   raw_data <- raw_data %>%
     dplyr::distinct(sites, date, species)
 
-  joined <- raw_data %>%
+  # 🔎 Join with deployment to validate period
+  joined <- detections %>%
     dplyr::left_join(
       deployment_camera %>%
         dplyr::select(sites, start_date, end_date),
       by = "sites"
     )
 
-  # 🔎 Identify out of period
+  # 🔎 Identify out of period (including missing deployment)
   out_of_period <- joined %>%
-    dplyr::filter(date < start_date | date > end_date)
+    dplyr::filter(
+      is.na(start_date) |
+        date < start_date |
+        date > end_date
+    )
 
-  if (export_out_of_period &&
-      !is.null(output_path) &&
-      nrow(out_of_period) > 0) {
+  n_out <- nrow(out_of_period)
+
+  if (n_out == 0) {
+    message("[Camera] ✅ No detections outside deployment period found.")
+  } else {
+    message("[Camera] ⚠ ", n_out,
+            " detections outside deployment period identified.")
+  }
+
+  if (export_out_of_period) {
+
+    if (is.null(output_path)) {
+      stop("`output_path` must be provided when `export_out_of_period = TRUE`.")
+    }
 
     readr::write_csv(
       out_of_period,
@@ -118,12 +134,17 @@ read_camtrap_detections <- function(config,
                config$project_name, ".csv")
       )
     )
+
+    message("[Camera] 📁 Out-of-period detections file exported.")
   }
 
   # ✅ Keep only valid detections
   joined %>%
-    dplyr::filter(date >= start_date &
-                    date <= end_date) %>%
+    dplyr::filter(
+      !is.na(start_date) &
+        date >= start_date &
+        date <= end_date
+    ) %>%
     dplyr::select(sites, species, date) %>%
     dplyr::arrange(sites)
 }

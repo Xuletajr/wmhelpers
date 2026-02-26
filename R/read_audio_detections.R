@@ -78,9 +78,13 @@ read_audio_detections <- function(config,
   out_of_period <- joined %>%
     dplyr::filter(date < start_date | date > end_date)
 
-  if (export_out_of_period &&
-      !is.null(output_path) &&
-      nrow(out_of_period) > 0) {
+  n_out <- nrow(out_of_period)
+
+  if (export_out_of_period) {
+
+    if (is.null(output_path)) {
+      stop("`output_path` must be provided when `export_out_of_period = TRUE`.")
+    }
 
     readr::write_csv(
       out_of_period,
@@ -90,6 +94,8 @@ read_audio_detections <- function(config,
                config$project_name, ".csv")
       )
     )
+
+    message("📁 Out-of-period detections file exported.")
   }
 
   # ✅ Keep only valid detections
