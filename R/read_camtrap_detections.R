@@ -1,23 +1,59 @@
+#' Read and clean camera trap detections
+#'
 #' Recursively reads all camera trap CSV files matching
-#' "images*.csv" inside the camtrap directory and
-#' standardizes detections.
+#' `"images*.csv"` inside the camtrap directory, standardizes detections,
+#' filters detections outside the deployment period, and optionally exports
+#' detections occurring outside the valid deployment window.
 #'
-#' @param config List with project paths.
-#' @param issue_cam_sites Optional vector of sites to exclude.
-#' @param valid_sites Optional vector of valid sites to retain.
+#' @param config List with project paths. Must contain `camtrap`,
+#'   `project_name`, and optionally `output_tables`.
+#' @param deployment_camera Deployment table with columns:
+#'   `sites`, `start_date`, and `end_date`.
+#' @param issue_cam_sites Optional character vector of sites to exclude.
+#' @param valid_sites Optional character vector of valid sites to retain.
+#' @param export_out_of_period Logical. If `TRUE`, detections occurring
+#'   outside the deployment period are exported as a CSV file.
+#'   Default is `FALSE`.
+#' @param output_path Character path where the out-of-period detections
+#'   CSV file will be saved. Required if `export_out_of_period = TRUE`.
 #'
-#' @return Tibble with columns: sites, species, date
-#' #' @author Jose W. Ribeiro Jr. ("Xuleta")
+#' @return A tibble with columns:
+#'   \itemize{
+#'     \item `sites`
+#'     \item `species`
+#'     \item `date`
+#'   }
+#'   containing only detections within the valid deployment period.
+#'
+#' @details
+#' The function:
+#' \enumerate{
+#'   \item Recursively locates all files matching `"images*.csv"`
+#'   \item Standardizes column names and species formatting
+#'   \item Removes blank and unidentified records
+#'   \item Filters issue or invalid sites if provided
+#'   \item Filters detections outside deployment dates
+#' }
+#'
+#' If `export_out_of_period = TRUE`, a CSV file named
+#' `"camera_detections_outside_deployment_<project_name>.csv"`
+#' will be saved in `output_path`, containing all detections
+#' that occurred before `start_date` or after `end_date`.
+#'
+#' @author Jose W. Ribeiro Jr. ("Xuleta")
 #'
 #' @export
+#' @export
 read_camtrap_detections <- function(config,
+                                    deployment_camera,
                                     issue_cam_sites = NULL,
-                                    valid_sites = NULL) {
+                                    valid_sites = NULL,
+                                    export_out_of_period = FALSE,
+                                    output_path = NULL) {
 
-  # 🔒 Resolve path safely
-  cam_root <- normalizePath(config$camtrap, mustWork = TRUE)
+  cam_root <- normalizePath(config$camtrap,
+                            mustWork = TRUE)
 
-  # 1️⃣ List all images*.csv files recursively
   cam_files <- fs::dir_ls(
     path = cam_root,
     recurse = TRUE,
@@ -29,48 +65,65 @@ read_camtrap_detections <- function(config,
     stop("No camera trap files matching 'images*.csv' found.")
   }
 
-  # 2️⃣ Read and bind all files
-  purrr::map_dfr(
+  raw_data <- purrr::map_dfr(
     cam_files,
     readr::read_csv,
     show_col_types = FALSE
   ) %>%
-
-    # 3️⃣ Standardize names
     dplyr::rename_with(stringr::str_to_lower) %>%
-
-    # 4️⃣ Create standardized columns
     dplyr::mutate(
       sites   = tolower(deployment_id),
       species = paste(genus, species),
       date    = as.Date(timestamp)
     ) %>%
-
-    # 5️⃣ Remove blanks and unidentified species
     tidyr::drop_na(species) %>%
     dplyr::filter(
       !species %in% c("IDD", "None", "Unknown",
                       "no CV results", "No CV Result")
-    ) %>%
+    )
 
-    # 6️⃣ Keep only valid sites (if provided)
-    {
-      if (!is.null(valid_sites)) {
-        dplyr::filter(., sites %in% valid_sites)
-      } else .
-    } %>%
+  if (!is.null(valid_sites)) {
+    raw_data <- dplyr::filter(raw_data,
+                              sites %in% valid_sites)
+  }
 
-    # 7️⃣ Remove issue sites (if provided)
-    {
-      if (!is.null(issue_cam_sites)) {
-        dplyr::filter(., !sites %in% issue_cam_sites)
-      } else .
-    } %>%
+  if (!is.null(issue_cam_sites)) {
+    raw_data <- dplyr::filter(raw_data,
+                              !sites %in% issue_cam_sites)
+  }
 
-    # 8️⃣ Keep unique species-site-day
-    dplyr::distinct(sites, date, species, .keep_all = FALSE) %>%
+  raw_data <- raw_data %>%
+    dplyr::distinct(sites, date, species)
 
-    # 9️⃣ Final clean output
+  joined <- raw_data %>%
+    dplyr::left_join(
+      deployment_camera %>%
+        dplyr::select(sites, start_date, end_date),
+      by = "sites"
+    )
+
+  # 🔎 Identify out of period
+  out_of_period <- joined %>%
+    dplyr::filter(date < start_date | date > end_date)
+
+  if (export_out_of_period &&
+      !is.null(output_path) &&
+      nrow(out_of_period) > 0) {
+
+    readr::write_csv(
+      out_of_period,
+      file = file.path(
+        output_path,
+        paste0("camera_detections_outside_deployment_",
+               config$project_name, ".csv")
+      )
+    )
+  }
+
+  # ✅ Keep only valid detections
+  joined %>%
+    dplyr::filter(date >= start_date &
+                    date <= end_date) %>%
     dplyr::select(sites, species, date) %>%
     dplyr::arrange(sites)
 }

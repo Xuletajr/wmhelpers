@@ -2,25 +2,65 @@
 % Please edit documentation in R/read_camtrap_detections.R
 \name{read_camtrap_detections}
 \alias{read_camtrap_detections}
-\title{Recursively reads all camera trap CSV files matching
-"images*.csv" inside the camtrap directory and
-standardizes detections.}
+\title{Read and clean camera trap detections}
 \usage{
-read_camtrap_detections(config, issue_cam_sites = NULL, valid_sites = NULL)
+read_camtrap_detections(
+  config,
+  deployment_camera,
+  issue_cam_sites = NULL,
+  valid_sites = NULL,
+  export_out_of_period = FALSE,
+  output_path = NULL
+)
 }
 \arguments{
-\item{config}{List with project paths.}
+\item{config}{List with project paths. Must contain \code{camtrap},
+\code{project_name}, and optionally \code{output_tables}.}
 
-\item{issue_cam_sites}{Optional vector of sites to exclude.}
+\item{deployment_camera}{Deployment table with columns:
+\code{sites}, \code{start_date}, and \code{end_date}.}
 
-\item{valid_sites}{Optional vector of valid sites to retain.}
+\item{issue_cam_sites}{Optional character vector of sites to exclude.}
+
+\item{valid_sites}{Optional character vector of valid sites to retain.}
+
+\item{export_out_of_period}{Logical. If \code{TRUE}, detections occurring
+outside the deployment period are exported as a CSV file.
+Default is \code{FALSE}.}
+
+\item{output_path}{Character path where the out-of-period detections
+CSV file will be saved. Required if \code{export_out_of_period = TRUE}.}
 }
 \value{
-Tibble with columns: sites, species, date
-#' @author Jose W. Ribeiro Jr. ("Xuleta")
+A tibble with columns:
+\itemize{
+\item \code{sites}
+\item \code{species}
+\item \code{date}
+}
+containing only detections within the valid deployment period.
 }
 \description{
 Recursively reads all camera trap CSV files matching
-"images*.csv" inside the camtrap directory and
-standardizes detections.
+\code{"images*.csv"} inside the camtrap directory, standardizes detections,
+filters detections outside the deployment period, and optionally exports
+detections occurring outside the valid deployment window.
+}
+\details{
+The function:
+\enumerate{
+\item Recursively locates all files matching \code{"images*.csv"}
+\item Standardizes column names and species formatting
+\item Removes blank and unidentified records
+\item Filters issue or invalid sites if provided
+\item Filters detections outside deployment dates
+}
+
+If \code{export_out_of_period = TRUE}, a CSV file named
+\code{"camera_detections_outside_deployment_<project_name>.csv"}
+will be saved in \code{output_path}, containing all detections
+that occurred before \code{start_date} or after \code{end_date}.
+}
+\author{
+Jose W. Ribeiro Jr. ("Xuleta")
 }
