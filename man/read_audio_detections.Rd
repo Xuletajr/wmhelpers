@@ -4,20 +4,49 @@
 \alias{read_audio_detections}
 \title{Read and clean audio detections}
 \usage{
-read_audio_detections(config, deployment_audio, issue_audio_sites = NULL)
+read_audio_detections(
+  config,
+  deployment_audio,
+  issue_audio_sites = NULL,
+  export_out_of_period = FALSE,
+  output_path = NULL
+)
 }
 \arguments{
-\item{config}{List with project paths.}
+\item{config}{List with project paths. Must contain \code{species_id},
+\code{project_name}, and optionally \code{output_tables}.}
 
-\item{deployment_audio}{Deployment table with start and end dates.}
+\item{deployment_audio}{Deployment table with columns:
+\code{sites}, \code{start_date}, and \code{end_date}.}
 
-\item{issue_audio_sites}{Optional vector of sites to exclude.}
+\item{issue_audio_sites}{Optional character vector of sites to exclude.}
+
+\item{export_out_of_period}{Logical. If \code{TRUE}, detections occurring
+outside the deployment period are exported as a CSV file.
+Default is \code{FALSE}.}
+
+\item{output_path}{Character path where the out-of-period detections
+CSV file will be saved. Required if \code{export_out_of_period = TRUE}.}
 }
 \value{
-Tibble with columns: sites, species, date
+A tibble with columns:
+\itemize{
+\item \code{sites}
+\item \code{species}
+\item \code{date}
+}
+containing only detections within the valid deployment period.
 }
 \description{
-Reads confirmed audio detections and standardizes site, species and date.
+Reads confirmed audio detections, standardizes site, species and date,
+filters detections outside the deployment period, and optionally exports
+detections that occurred outside the valid deployment window.
+}
+\details{
+If \code{export_out_of_period = TRUE}, a CSV file named
+\code{"audio_detections_outside_deployment_<project_name>.csv"}
+will be saved in \code{output_path}, containing all detections
+that occurred before \code{start_date} or after \code{end_date}.
 }
 \author{
 Jose W. Ribeiro Jr. ("Xuleta")
