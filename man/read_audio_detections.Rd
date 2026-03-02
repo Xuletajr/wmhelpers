@@ -40,13 +40,21 @@ containing only detections within the valid deployment period.
 \description{
 Reads confirmed audio detections, standardizes site, species and date,
 filters detections outside the deployment period, and optionally exports
-detections that occurred outside the valid deployment window.
+detections occurring outside the valid deployment window.
 }
 \details{
-If \code{export_out_of_period = TRUE}, a CSV file named
+The function:
+\enumerate{
+\item Reads confirmed audio detections
+\item Standardizes column names and date format
+\item Removes issue sites if provided
+\item Filters detections outside deployment dates
+}
+
+If \code{export_out_of_period = TRUE} and detections outside the deployment
+window are found, a CSV file named
 \code{"audio_detections_outside_deployment_<project_name>.csv"}
-will be saved in \code{output_path}, containing all detections
-that occurred before \code{start_date} or after \code{end_date}.
+will be saved in \code{output_path}.
 }
 \author{
 Jose W. Ribeiro Jr. ("Xuleta")

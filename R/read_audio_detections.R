@@ -2,7 +2,7 @@
 #'
 #' Reads confirmed audio detections, standardizes site, species and date,
 #' filters detections outside the deployment period, and optionally exports
-#' detections that occurred outside the valid deployment window.
+#' detections occurring outside the valid deployment window.
 #'
 #' @param config List with project paths. Must contain `species_id`,
 #'   `project_name`, and optionally `output_tables`.
@@ -24,14 +24,21 @@
 #'   containing only detections within the valid deployment period.
 #'
 #' @details
-#' If `export_out_of_period = TRUE`, a CSV file named
+#' The function:
+#' \enumerate{
+#'   \item Reads confirmed audio detections
+#'   \item Standardizes column names and date format
+#'   \item Removes issue sites if provided
+#'   \item Filters detections outside deployment dates
+#' }
+#'
+#' If `export_out_of_period = TRUE` and detections outside the deployment
+#' window are found, a CSV file named
 #' `"audio_detections_outside_deployment_<project_name>.csv"`
-#' will be saved in `output_path`, containing all detections
-#' that occurred before `start_date` or after `end_date`.
+#' will be saved in `output_path`.
 #'
 #' @author Jose W. Ribeiro Jr. ("Xuleta")
 #'
-#' @export
 #' @export
 read_audio_detections <- function(config,
                                   deployment_audio,
@@ -48,8 +55,11 @@ read_audio_detections <- function(config,
     mustWork = TRUE
   )
 
-  raw_data <- readr::read_csv(file_path,
-                              show_col_types = FALSE) %>%
+  # 🔹 Read and standardize raw detections
+  raw_data <- readr::read_csv(
+    file_path,
+    show_col_types = FALSE
+  ) %>%
     dplyr::rename(
       species = class_name,
       sites   = site_name
@@ -59,14 +69,15 @@ read_audio_detections <- function(config,
       date  = as.Date(paste(year, month, day, sep = "-"))
     )
 
+  # 🔹 Optional filters
   if (!is.null(issue_audio_sites)) {
-    raw_data <- dplyr::filter(raw_data,
-                              !sites %in% issue_audio_sites)
+    raw_data <- dplyr::filter(raw_data, !sites %in% issue_audio_sites)
   }
 
   raw_data <- raw_data %>%
     dplyr::distinct(sites, date, species)
 
+  # 🔎 Join with deployment to validate period
   joined <- raw_data %>%
     dplyr::left_join(
       deployment_audio %>%
@@ -74,13 +85,25 @@ read_audio_detections <- function(config,
       by = "sites"
     )
 
-  # 🔎 Identify out of period
+  # 🔎 Identify out-of-period (including missing deployment)
   out_of_period <- joined %>%
-    dplyr::filter(date < start_date | date > end_date)
+    dplyr::filter(
+      is.na(start_date) |
+        date < start_date |
+        date > end_date
+    )
 
   n_out <- nrow(out_of_period)
 
-  if (export_out_of_period) {
+  if (n_out == 0) {
+    message("[Audio] ✅ No detections outside deployment period found.")
+  } else {
+    message("[Audio] ⚠ ", n_out,
+            " detections outside deployment period identified.")
+  }
+
+  # 📁 Export only if there ARE detections outside
+  if (export_out_of_period && n_out > 0) {
 
     if (is.null(output_path)) {
       stop("`output_path` must be provided when `export_out_of_period = TRUE`.")
@@ -95,13 +118,16 @@ read_audio_detections <- function(config,
       )
     )
 
-    message("📁 Out-of-period detections file exported.")
+    message("[Audio] 📁 Out-of-period detections file exported.")
   }
 
   # ✅ Keep only valid detections
   joined %>%
-    dplyr::filter(date >= start_date &
-                    date <= end_date) %>%
+    dplyr::filter(
+      !is.na(start_date) &
+        date >= start_date &
+        date <= end_date
+    ) %>%
     dplyr::select(sites, species, date) %>%
     dplyr::arrange(sites)
 }
