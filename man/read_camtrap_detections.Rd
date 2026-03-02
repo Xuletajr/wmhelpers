@@ -9,13 +9,15 @@ read_camtrap_detections(
   deployment_camera,
   issue_cam_sites = NULL,
   valid_sites = NULL,
+  species_corrections = NULL,
+  valid_species = NULL,
   export_out_of_period = FALSE,
   output_path = NULL
 )
 }
 \arguments{
-\item{config}{List with project paths. Must contain \code{camtrap},
-\code{project_name}, and optionally \code{output_tables}.}
+\item{config}{List with project paths. Must contain \code{camtrap}
+and \code{project_name}.}
 
 \item{deployment_camera}{Deployment table with columns:
 \code{sites}, \code{start_date}, and \code{end_date}.}
@@ -23,6 +25,13 @@ read_camtrap_detections(
 \item{issue_cam_sites}{Optional character vector of sites to exclude.}
 
 \item{valid_sites}{Optional character vector of valid sites to retain.}
+
+\item{species_corrections}{Optional named character vector for species
+name corrections. Names must be the original values and elements the
+corrected names. Passed to \code{dplyr::recode()}.}
+
+\item{valid_species}{Optional character vector of species to retain
+(e.g., \code{spp_list_cam$species}).}
 
 \item{export_out_of_period}{Logical. If \code{TRUE}, detections occurring
 outside the deployment period are exported as a CSV file.
@@ -43,16 +52,18 @@ containing only detections within the valid deployment period.
 \description{
 Recursively reads all camera trap CSV files matching
 \code{"images*.csv"} inside the camtrap directory, standardizes detections,
+applies optional species corrections and species filtering,
 filters detections outside the deployment period, and optionally exports
 detections occurring outside the valid deployment window.
 }
 \details{
-The function:
+Processing steps:
 \enumerate{
 \item Recursively locates all files matching \code{"images*.csv"}
 \item Standardizes column names and species formatting
 \item Removes blank and unidentified records
-\item Filters issue or invalid sites if provided
+\item Applies optional species corrections
+\item Applies optional site and species filters
 \item Filters detections outside deployment dates
 }
 

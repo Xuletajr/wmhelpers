@@ -2,15 +2,21 @@
 #'
 #' Recursively reads all camera trap CSV files matching
 #' `"images*.csv"` inside the camtrap directory, standardizes detections,
+#' applies optional species corrections and species filtering,
 #' filters detections outside the deployment period, and optionally exports
 #' detections occurring outside the valid deployment window.
 #'
-#' @param config List with project paths. Must contain `camtrap`,
-#'   `project_name`, and optionally `output_tables`.
+#' @param config List with project paths. Must contain `camtrap`
+#'   and `project_name`.
 #' @param deployment_camera Deployment table with columns:
 #'   `sites`, `start_date`, and `end_date`.
 #' @param issue_cam_sites Optional character vector of sites to exclude.
 #' @param valid_sites Optional character vector of valid sites to retain.
+#' @param species_corrections Optional named character vector for species
+#'   name corrections. Names must be the original values and elements the
+#'   corrected names. Passed to `dplyr::recode()`.
+#' @param valid_species Optional character vector of species to retain
+#'   (e.g., `spp_list_cam$species`).
 #' @param export_out_of_period Logical. If `TRUE`, detections occurring
 #'   outside the deployment period are exported as a CSV file.
 #'   Default is `FALSE`.
@@ -26,12 +32,13 @@
 #'   containing only detections within the valid deployment period.
 #'
 #' @details
-#' The function:
+#' Processing steps:
 #' \enumerate{
 #'   \item Recursively locates all files matching `"images*.csv"`
 #'   \item Standardizes column names and species formatting
 #'   \item Removes blank and unidentified records
-#'   \item Filters issue or invalid sites if provided
+#'   \item Applies optional species corrections
+#'   \item Applies optional site and species filters
 #'   \item Filters detections outside deployment dates
 #' }
 #'
@@ -47,6 +54,8 @@ read_camtrap_detections <- function(config,
                                     deployment_camera,
                                     issue_cam_sites = NULL,
                                     valid_sites = NULL,
+                                    species_corrections = NULL,
+                                    valid_species = NULL,
                                     export_out_of_period = FALSE,
                                     output_path = NULL) {
 
@@ -81,13 +90,26 @@ read_camtrap_detections <- function(config,
                       "no CV results", "No CV Result")
     )
 
-  # 🔹 Optional filters
+  # 🔹 Apply species corrections (if provided)
+  if (!is.null(species_corrections)) {
+    raw_data <- raw_data %>%
+      dplyr::mutate(
+        species = dplyr::recode(species, !!!species_corrections)
+      )
+  }
+
+  # 🔹 Optional site filters
   if (!is.null(valid_sites)) {
     raw_data <- dplyr::filter(raw_data, sites %in% valid_sites)
   }
 
   if (!is.null(issue_cam_sites)) {
     raw_data <- dplyr::filter(raw_data, !sites %in% issue_cam_sites)
+  }
+
+  # 🔹 Optional species filter
+  if (!is.null(valid_species)) {
+    raw_data <- dplyr::filter(raw_data, species %in% valid_species)
   }
 
   raw_data <- raw_data %>%
