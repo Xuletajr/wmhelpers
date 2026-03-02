@@ -56,10 +56,10 @@ The function:
 \item Filters detections outside deployment dates
 }
 
-If \code{export_out_of_period = TRUE}, a CSV file named
+If \code{export_out_of_period = TRUE} and detections outside the deployment
+period are found, a CSV file named
 \code{"camera_detections_outside_deployment_<project_name>.csv"}
-will be saved in \code{output_path}, containing all detections
-that occurred before \code{start_date} or after \code{end_date}.
+will be saved in \code{output_path}.
 }
 \author{
 Jose W. Ribeiro Jr. ("Xuleta")

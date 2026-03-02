@@ -35,10 +35,10 @@
 #'   \item Filters detections outside deployment dates
 #' }
 #'
-#' If `export_out_of_period = TRUE`, a CSV file named
+#' If `export_out_of_period = TRUE` and detections outside the deployment
+#' period are found, a CSV file named
 #' `"camera_detections_outside_deployment_<project_name>.csv"`
-#' will be saved in `output_path`, containing all detections
-#' that occurred before `start_date` or after `end_date`.
+#' will be saved in `output_path`.
 #'
 #' @author Jose W. Ribeiro Jr. ("Xuleta")
 #'
@@ -118,7 +118,8 @@ read_camtrap_detections <- function(config,
             " detections outside deployment period identified.")
   }
 
-  if (export_out_of_period) {
+  # 📁 Export ONLY if requested AND if detections exist
+  if (export_out_of_period && n_out > 0) {
 
     if (is.null(output_path)) {
       stop("`output_path` must be provided when `export_out_of_period = TRUE`.")
