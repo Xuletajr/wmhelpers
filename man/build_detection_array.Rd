@@ -70,9 +70,11 @@ This ensures:
 }
 }
 \examples{
+\dontrun{
 audio_array <- build_detection_array(
   df     = audio_filt,
   deploy = deploy_audio_filt
 )
+}
 
 }
