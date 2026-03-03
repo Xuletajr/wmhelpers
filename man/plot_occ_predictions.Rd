@@ -14,17 +14,6 @@ plot_occ_predictions(
   ribbon_alpha = 0.55,
   strip_class_prefix = ""
 )
-
-plot_occ_predictions(
-  pred_occ_df,
-  type_levels = NULL,
-  color_ribbon = "#CCCCCC",
-  color_line = "#1B3A5C",
-  color_text = "#1B3A5C",
-  color_strip_bg = "#E8EEF4",
-  ribbon_alpha = 0.55,
-  strip_class_prefix = ""
-)
 }
 \arguments{
 \item{pred_occ_df}{Tidy data frame from \code{\link{summarise_occ_predictions}}.}
@@ -34,17 +23,15 @@ plot_occ_predictions(
 \item{color_ribbon, color_line, color_text, color_strip_bg}{Characters.
 Colours for ribbon, line, text, and strip background.}
 
+\item{ribbon_alpha}{Numeric. Transparency of the credible interval ribbon.
+Defaults to \code{0.55}.}
+
 \item{strip_class_prefix}{Character to strip from class names in titles.}
 }
 \value{
 Named list of \code{ggplot} objects.
-
-Named list of \code{ggplot} objects.
 }
 \description{
-Produces a named list of \code{ggplot} objects, one per combination of
-variable × year × (optionally) class.
-
 Produces a named list of \code{ggplot} objects, one per combination of
 variable × year × (optionally) class.
 }

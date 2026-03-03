@@ -32,6 +32,9 @@ used to convert Julian days to calendar dates.}
 
 \item{color_line}{Character. Line colour. Defaults to \code{"#1B3A5C"}.}
 
+\item{ribbon_alpha}{Numeric. Transparency of the credible interval ribbon.
+Defaults to \code{0.55}.}
+
 \item{output_path}{Character. If provided, exported as PNG.
 Defaults to \code{NULL}.}
 
