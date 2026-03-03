@@ -741,13 +741,13 @@ plot_detection_julian <- function(pred_det_df,
     tibble::as_tibble() %>%
     ggplot2::ggplot() +
 
-    # Subtle horizontal reference line at 0.5
-    ggplot2::geom_hline(
-      yintercept = 0.5,
-      linetype   = "dashed",
-      colour     = "grey60",
-      linewidth  = 0.4
-    ) +
+    # # Subtle horizontal reference line at 0.5
+    # ggplot2::geom_hline(
+    #   yintercept = 0.5,
+    #   linetype   = "dashed",
+    #   colour     = "grey60",
+    #   linewidth  = 0.4
+    # ) +
 
     # 95% credible interval ribbon — semi-transparent so the line
     # remains visible even when the CI is very wide
@@ -771,11 +771,11 @@ plot_detection_julian <- function(pred_det_df,
     ) +
 
     # Fix y-axis to the probability scale
-    ggplot2::scale_y_continuous(
-      limits = c(0, 1),
-      breaks = seq(0, 1, by = 0.2),
-      expand = ggplot2::expansion(mult = c(0.01, 0.02))
-    ) +
+    # ggplot2::scale_y_continuous(
+    #   limits = c(0, 1),
+    #   breaks = seq(0, 1, by = 0.2),
+    #   expand = ggplot2::expansion(mult = c(0.01, 0.02))
+    # ) +
 
     ggplot2::scale_x_date(
       date_labels       = "%b-%d",
@@ -1055,11 +1055,11 @@ plot_occ_predictions <- function(pred_occ_df,
         alpha = ribbon_alpha
       ) +
 
-      # Mean prediction line on top
-      ggplot2::geom_line(
-        color     = color_line,
-        linewidth = 2.2
-      ) +
+      # # Mean prediction line on top
+      # ggplot2::geom_line(
+      #   color     = color_line,
+      #   linewidth = 2.2
+      # ) +
 
       ggplot2::labs(
         x       = data_subset$expanded_variable[1],
@@ -1241,13 +1241,13 @@ plot_occ_predictions <- function(pred_occ_df,
     ggplot2::ggplot(data_subset,
                     ggplot2::aes(x = as.numeric(seq_data), y = mean)) +
 
-      # Subtle reference line at 0.5
-      ggplot2::geom_hline(
-        yintercept = 0.5,
-        linetype   = "dashed",
-        colour     = "grey60",
-        linewidth  = 0.4
-      ) +
+      # # Subtle reference line at 0.5
+      # ggplot2::geom_hline(
+      #   yintercept = 0.5,
+      #   linetype   = "dashed",
+      #   colour     = "grey60",
+      #   linewidth  = 0.4
+      # ) +
 
       # 95% credible interval ribbon — semi-transparent
       ggplot2::geom_ribbon(
@@ -1269,16 +1269,16 @@ plot_occ_predictions <- function(pred_occ_df,
         caption = "Shaded area: 95% credible interval"
       ) +
 
-      # Fix y-axis to the full probability scale
-      ggplot2::scale_y_continuous(
-        limits = c(0, 1),
-        breaks = seq(0, 1, by = 0.2),
-        expand = ggplot2::expansion(mult = c(0.01, 0.02))
-      ) +
+      # # Fix y-axis to the full probability scale
+      # ggplot2::scale_y_continuous(
+      #   limits = c(0, 1),
+      #   breaks = seq(0, 1, by = 0.2),
+      #   expand = ggplot2::expansion(mult = c(0.01, 0.02))
+      # ) +
 
-      ggplot2::scale_x_continuous(
-        expand = ggplot2::expansion(mult = c(0.01, 0.01))
-      ) +
+      # ggplot2::scale_x_continuous(
+      #   expand = ggplot2::expansion(mult = c(0.01, 0.01))
+      # ) +
 
       ggplot2::theme_classic() +
       ggplot2::theme(
