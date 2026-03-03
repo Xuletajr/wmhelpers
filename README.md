@@ -213,6 +213,14 @@ End-to-end functions for loading predictions, building spatial objects, and expo
 
 ---
 
+## Contributing
+
+Please read the [CONTRIBUTING.md](CONTRIBUTING.md) file before submitting changes.
+
+All contributions must follow the development standards and documentation guidelines described there.
+
+---
+
 ## 👥 Contributors
 
 * **Jose W. Ribeiro Jr.** ("Xuleta")
