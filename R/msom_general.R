@@ -254,6 +254,7 @@ check_ess <- function(ess_values,
 #' and optionally exports to PNG.
 #'
 #' @inheritParams plot_rhat_hist
+#' @param fig_font Character. Font family for axis text. Defaults to \code{""}
 #'
 #' @return Invisibly returns the \code{ggplot} object.
 #'
@@ -715,6 +716,8 @@ predict_detection_julian <- function(out_bestmodel,
 #'   Defaults to \code{NULL}.
 #' @param width,height Numeric. PNG dimensions in cm.
 #' @param dpi Integer. Resolution.
+#' @param ribbon_alpha Numeric. Transparency of the credible interval ribbon.
+#'   Defaults to \code{0.55}.
 #'
 #' @return Invisibly returns the \code{ggplot} object.
 #'
@@ -741,13 +744,13 @@ plot_detection_julian <- function(pred_det_df,
     tibble::as_tibble() %>%
     ggplot2::ggplot() +
 
-    # Subtle horizontal reference line at 0.5
-    ggplot2::geom_hline(
-      yintercept = 0.5,
-      linetype   = "dashed",
-      colour     = "grey60",
-      linewidth  = 0.4
-    ) +
+    # # Subtle horizontal reference line at 0.5
+    # ggplot2::geom_hline(
+    #   yintercept = 0.5,
+    #   linetype   = "dashed",
+    #   colour     = "grey60",
+    #   linewidth  = 0.4
+    # ) +
 
     # 95% credible interval ribbon — semi-transparent so the line
     # remains visible even when the CI is very wide
@@ -770,12 +773,12 @@ plot_detection_julian <- function(pred_det_df,
       y        = "Detection probability"
     ) +
 
-    # Fix y-axis to the probability scale
-    ggplot2::scale_y_continuous(
-      limits = c(0, 1),
-      breaks = seq(0, 1, by = 0.2),
-      expand = ggplot2::expansion(mult = c(0.01, 0.02))
-    ) +
+    # # Fix y-axis to the probability scale
+    # ggplot2::scale_y_continuous(
+    #   limits = c(0, 1),
+    #   breaks = seq(0, 1, by = 0.2),
+    #   expand = ggplot2::expansion(mult = c(0.01, 0.02))
+    # ) +
 
     ggplot2::scale_x_date(
       date_labels       = "%b-%d",
@@ -985,140 +988,78 @@ predict_occupancy <- function(out_bestmodel,
 # 13. summarise_occ_predictions
 # =============================================================================
 
-#' Build Occupancy Prediction Plot List
+#' Summarise Occupancy Prediction Array into a Tidy Data Frame
 #'
-#' Produces a named list of \code{ggplot} objects, one per combination of
-#' variable × year × (optionally) class.
+#' Converts the 3-D prediction array produced by \code{\link{predict_occupancy}}
+#' into a tidy \code{tibble} with posterior mean, SD, and 95\% CRI per
+#' combination of variable, year, and (optionally) class.
 #'
-#' @param pred_occ_df Tidy data frame from \code{\link{summarise_occ_predictions}}.
-#' @param type_levels Character vector or \code{NULL}.
-#' @param color_ribbon,color_line,color_text,color_strip_bg Characters.
-#'   Colours for ribbon, line, text, and strip background.
-#' @param strip_class_prefix Character to strip from class names in titles.
+#' @param predOcc Three-dimensional array \code{[n_pred x nsamp x combinations]}
+#'   as returned by \code{\link{predict_occupancy}}.
+#' @param year_levels Character vector of year/period levels.
+#' @param type_levels Character vector of type levels, or \code{NULL}.
+#' @param seq_list Named list of raw sequences from
+#'   \code{\link{prepare_occ_sequences}}.
+#' @param variable_labels Optional named character vector of display labels
+#'   for each variable. If \code{NULL}, variable names are used as-is.
 #'
-#' @return Named list of \code{ggplot} objects.
+#' @return A tidy \code{tibble} with columns \code{variable},
+#'   \code{expanded_variable}, \code{year}, \code{class} (if applicable),
+#'   \code{mean}, \code{sd}, \code{ciL}, \code{ciU}, and \code{seq_data}.
 #'
 #' @export
-plot_occ_predictions <- function(pred_occ_df,
-                                  type_levels        = NULL,
-                                  color_ribbon       = "#CCCCCC",
-                                  color_line         = "#1B3A5C",
-                                  color_text         = "#1B3A5C",
-                                  color_strip_bg     = "#E8EEF4",
-                                  ribbon_alpha       = 0.55,
-                                  strip_class_prefix = "") {
+summarise_occ_predictions <- function(predOcc,
+                                       year_levels,
+                                       type_levels     = NULL,
+                                       seq_list        = NULL,
+                                       variable_labels = NULL) {
 
-  unique_years       <- unique(pred_occ_df$year)
-  show_year_in_title <- length(unique_years) > 1
+  stopifnot(
+    "predOcc must be a 3D array" = is.array(predOcc) && length(dim(predOcc)) == 3
+  )
 
-  grouping_vars <- if (is.null(type_levels)) {
-    c("expanded_variable", "year")
-  } else {
-    c("expanded_variable", "year", "class")
-  }
+  combo_names <- dimnames(predOcc)[[3]]
+  n_pred      <- dim(predOcc)[1]
 
-  make_title <- if (is.null(type_levels)) {
-    function(d) if (show_year_in_title) paste("Survey Year:", d$year[1]) else ""
-  } else {
-    function(d) {
-      cl <- gsub(strip_class_prefix, "", d$class[1])
-      if (show_year_in_title) paste("Land use:", cl, "- Year:", d$year[1])
-      else                     paste("Land use:", cl)
+  rows <- lapply(combo_names, function(combo) {
+
+    # Parse combo name back into parts
+    parts <- strsplit(combo, "_")[[1]]
+
+    if (is.null(type_levels)) {
+      # Format: variable_year  (year is last part)
+      year_val <- parts[length(parts)]
+      var_val  <- paste(parts[-length(parts)], collapse = "_")
+      class_val <- year_val
+    } else {
+      # Format: variable_year_type  (last two parts are year and type)
+      type_val  <- parts[length(parts)]
+      year_val  <- parts[length(parts) - 1]
+      var_val   <- paste(parts[-c(length(parts) - 1, length(parts))],
+                         collapse = "_")
+      class_val <- paste0(year_val, "_", type_val)
     }
-  }
 
-  splits <- pred_occ_df %>%
-    dplyr::group_split(!!!rlang::syms(grouping_vars))
+    slice <- predOcc[, , combo]
 
-  plot_names <- sapply(splits, function(d) {
-    if (is.null(type_levels)) paste0(d$variable[1], "_", d$year[1])
-    else                       paste0(d$variable[1], "_", d$year[1], "_", d$class[1])
+    tibble::tibble(
+      variable          = var_val,
+      expanded_variable = if (!is.null(variable_labels) &&
+                               var_val %in% names(variable_labels))
+                            variable_labels[[var_val]] else var_val,
+      year              = year_val,
+      class             = class_val,
+      mean              = list(apply(slice, 1, mean)),
+      sd                = list(apply(slice, 1, sd)),
+      ciL               = list(apply(slice, 1, quantile, probs = 0.025)),
+      ciU               = list(apply(slice, 1, quantile, probs = 0.975)),
+      seq_data          = list(if (!is.null(seq_list) && var_val %in% names(seq_list))
+                                 seq_list[[var_val]] else seq_len(n_pred))
+    )
   })
 
-  plot_list <- lapply(splits, function(data_subset) {
-    data_subset <- data_subset %>%
-      tidyr::unnest(cols = c(mean, sd, ciL, ciU, seq_data))
-
-    cat("Plotting:", data_subset$variable[1], "| Year:", data_subset$year[1])
-    if (!is.null(type_levels)) cat(" | Class:", data_subset$class[1])
-    cat(" |", nrow(data_subset), "rows\n")
-
-    title_text <- make_title(data_subset)
-
-    ggplot2::ggplot(data_subset,
-                    ggplot2::aes(x = as.numeric(seq_data), y = mean)) +
-
-      # 95% credible interval ribbon — semi-transparent
-      ggplot2::geom_ribbon(
-        ggplot2::aes(ymin = ciL, ymax = ciU),
-        fill  = color_ribbon,
-        alpha = ribbon_alpha
-      ) +
-
-      # Mean prediction line on top
-      ggplot2::geom_line(
-        color     = color_line,
-        linewidth = 2.2
-      ) +
-
-      ggplot2::labs(
-        x       = data_subset$expanded_variable[1],
-        y       = "Occupancy probability (Community-level)",
-        title   = title_text,
-        caption = "Shaded area: 95% credible interval"
-      ) +
-
-
-
-      ggplot2::theme_classic() +
-      ggplot2::theme(
-
-        # Axis titles
-        axis.title.x  = ggplot2::element_text(size = 14, color = color_text,
-                                              margin = ggplot2::margin(t = 10)),
-        axis.title.y  = ggplot2::element_text(size = 14, color = color_text,
-                                              margin = ggplot2::margin(r = 10)),
-
-        # Axis tick labels
-        axis.text     = ggplot2::element_text(size = 12, color = "grey20"),
-
-        # Thin axis lines and ticks
-        axis.line     = ggplot2::element_line(colour = "grey70", linewidth = 0.4),
-        axis.ticks    = ggplot2::element_line(colour = "grey70", linewidth = 0.4),
-
-        # Only horizontal gridlines for reading probability values
-        panel.grid.major.y = ggplot2::element_line(colour = "grey92",
-                                                    linewidth = 0.3),
-        panel.grid.major.x = ggplot2::element_blank(),
-        panel.grid.minor   = ggplot2::element_blank(),
-
-        # Plot title (shown only when multiple years or classes)
-        plot.title    = ggplot2::element_text(size = 13, color = color_text,
-                                              face = "bold",
-                                              margin = ggplot2::margin(b = 6)),
-
-        # Caption
-        plot.caption  = ggplot2::element_text(size = 10, colour = "grey50",
-                                              hjust = 0,
-                                              margin = ggplot2::margin(t = 8)),
-
-        # Strip labels (for faceted use if ever needed)
-        strip.text.x     = ggplot2::element_text(size = 12, color = color_text),
-        strip.background = ggplot2::element_rect(fill = color_strip_bg,
-                                                 colour = NA),
-
-        # Breathing room
-        plot.margin   = ggplot2::margin(t = 16, r = 20, b = 10, l = 10),
-        legend.position = "none"
-      )
-  })
-
-  names(plot_list) <- plot_names
-  plot_list
+  dplyr::bind_rows(rows)
 }
-
-
-
 
 
 # =============================================================================
@@ -1188,6 +1129,8 @@ run_occ_predictions <- function(variables_to_scale,
 #' @param color_ribbon,color_line,color_text,color_strip_bg Characters.
 #'   Colours for ribbon, line, text, and strip background.
 #' @param strip_class_prefix Character to strip from class names in titles.
+#' @param ribbon_alpha Numeric. Transparency of the credible interval ribbon.
+#'   Defaults to \code{0.55}.
 #'
 #' @return Named list of \code{ggplot} objects.
 #'
@@ -1241,13 +1184,13 @@ plot_occ_predictions <- function(pred_occ_df,
     ggplot2::ggplot(data_subset,
                     ggplot2::aes(x = as.numeric(seq_data), y = mean)) +
 
-      # Subtle reference line at 0.5
-      ggplot2::geom_hline(
-        yintercept = 0.5,
-        linetype   = "dashed",
-        colour     = "grey60",
-        linewidth  = 0.4
-      ) +
+      # # Subtle reference line at 0.5
+      # ggplot2::geom_hline(
+      #   yintercept = 0.5,
+      #   linetype   = "dashed",
+      #   colour     = "grey60",
+      #   linewidth  = 0.4
+      # ) +
 
       # 95% credible interval ribbon — semi-transparent
       ggplot2::geom_ribbon(
@@ -1269,16 +1212,16 @@ plot_occ_predictions <- function(pred_occ_df,
         caption = "Shaded area: 95% credible interval"
       ) +
 
-      # Fix y-axis to the full probability scale
-      ggplot2::scale_y_continuous(
-        limits = c(0, 1),
-        breaks = seq(0, 1, by = 0.2),
-        expand = ggplot2::expansion(mult = c(0.01, 0.02))
-      ) +
+      # # Fix y-axis to the full probability scale
+      # ggplot2::scale_y_continuous(
+      #   limits = c(0, 1),
+      #   breaks = seq(0, 1, by = 0.2),
+      #   expand = ggplot2::expansion(mult = c(0.01, 0.02))
+      # ) +
 
-      ggplot2::scale_x_continuous(
-        expand = ggplot2::expansion(mult = c(0.01, 0.01))
-      ) +
+      # ggplot2::scale_x_continuous(
+      #   expand = ggplot2::expansion(mult = c(0.01, 0.01))
+      # ) +
 
       ggplot2::theme_classic() +
       ggplot2::theme(

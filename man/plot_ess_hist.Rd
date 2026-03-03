@@ -30,6 +30,8 @@ Defaults to \code{"#CCCCCC"}.}
 
 \item{color_grid}{Character. Panel grid colour. Defaults to \code{"#E8EEF4"}.}
 
+\item{fig_font}{Character. Font family for axis text. Defaults to \code{""}}
+
 \item{width, height, dpi}{Numeric. PNG dimensions in inches and resolution.}
 }
 \value{
