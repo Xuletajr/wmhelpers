@@ -67,7 +67,7 @@ Label construction is controlled via \code{status_ref}, \code{flag_value},
 and \code{flag_symbol}, allowing flexible representation of conservation
 rules across projects.
 
-If \code{config} is provided, color settings are read from it; otherwise,
+If \code{config} is provided, color settings are read from it. Otherwise,
 default ggplot2 styling is applied.
 }
 \author{
