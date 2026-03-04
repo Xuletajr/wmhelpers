@@ -4,7 +4,7 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/WM/wmhelpers)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
 <p align="left">
-  <img src="inst/figures/Wildmon-Horizontal-logo-white-blue-full.png"
+  <img src="inst/figures/Wildmon_Horizontal_logo_white_blue_full.png"
        alt="WildMon logo"
        width="220"/>
 </p>
