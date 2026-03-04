@@ -102,7 +102,7 @@ Functions to query, match, and download species occurrence data from the [GBIF](
 
 ### 🦉 MSOM — General inference and diagnostics (`msom_general.R`)
 
-Functions for MCMC diagnostics, species-level parameter summaries, and occupancy probability extraction from fitted Multi-Species Occupancy Models.
+Functions for MCMC diagnostics, species-level parameter summaries, and occupancy probability extraction from fitted Multi-Species Occupancy Models (output of package spOccupancy).
 
 #### Diagnostics
 
