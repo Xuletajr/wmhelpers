@@ -84,7 +84,7 @@ Functions are organized by module. All exported functions are documented and acc
 
 | Function | Description |
 |---|---|
-| `plot_species_frequency()` | Generate standardized bar plots for species detection frequency and richness summaries |
+| `plot_bar_species()` | Generate standardized bar plots for species detection frequency and richness summaries |
 	
 
 
