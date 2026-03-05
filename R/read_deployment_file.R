@@ -5,7 +5,8 @@
 #'
 #' For camera data, start and end dates must already exist in the file.
 #' For audio data, year/month/day columns are combined to compute
-#' start and end dates per site, and coordinates are joined externally.
+#' start and end dates per site. Optionally, days with insufficient
+#' sampling effort can be removed before calculating deployment periods.
 #'
 #' @param path Character. Path to deployment CSV file.
 #' @param site_col Character. Column name containing site identifiers.
@@ -14,6 +15,9 @@
 #' @param issue_sites Optional character vector of site names to exclude.
 #' @param coord_path Optional character. Path to coordinate CSV file.
 #' Required when `method = "audio"`.
+#' @param problem_days Optional data frame containing site-day combinations
+#' to exclude due to insufficient sampling effort. Must contain columns
+#' `"sites"` (lowercase site names) and `"date"`.
 #'
 #' @return A tibble with columns:
 #' \describe{
@@ -26,16 +30,7 @@
 #'   \item{method}{Survey method}
 #' }
 #'
-#' @examples
-#' \dontrun{
-#' read_deployment_file(
-#'   path = "deployments.csv",
-#'   site_col = "deployment_id",
-#'   method = "camera"
-#' )
-#' }
-#'
-#'#' @author Jose W. Ribeiro Jr. ("Xuleta")
+#' @author Jose W. Ribeiro Jr. ("Xuleta")
 #'
 #' @export
 read_deployment_file <- function(path,
@@ -43,7 +38,8 @@ read_deployment_file <- function(path,
                                  method = c("camera", "audio"),
                                  valid_sites = NULL,
                                  issue_sites = NULL,
-                                 coord_path = NULL) {
+                                 coord_path = NULL,
+                                 problem_days = NULL) {
 
   method <- match.arg(method)
 
@@ -111,15 +107,40 @@ read_deployment_file <- function(path,
         date = lubridate::make_date(year, month, day)
       ) %>%
       dplyr::rename(sites = !!rlang::sym(site_col)) %>%
+      dplyr::mutate(
+        sites = tolower(sites)
+      )
+
+    # -------------------------
+    # REMOVE LOW-EFFORT DAYS
+    # -------------------------
+    if (!is.null(problem_days)) {
+
+      if (!all(c("sites", "date") %in% names(problem_days))) {
+        rlang::abort(
+          "problem_days must contain columns 'sites' and 'date'"
+        )
+      }
+
+      problem_days <- problem_days %>%
+        dplyr::mutate(
+          sites = tolower(sites),
+          date  = as.Date(date)
+        ) %>%
+        dplyr::select(sites, date)
+
+      df <- df %>%
+        dplyr::anti_join(problem_days,
+                         by = c("sites", "date"))
+    }
+
+    df <- df %>%
       dplyr::left_join(coords, by = c("sites" = "site_name")) %>%
       dplyr::group_by(sites, longitude, latitude) %>%
       dplyr::summarise(
         start_date = min(date),
         end_date   = max(date),
         .groups = "drop"
-      ) %>%
-      dplyr::mutate(
-        sites = tolower(sites)
       )
   }
 

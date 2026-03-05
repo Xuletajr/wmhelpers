@@ -10,7 +10,8 @@ read_deployment_file(
   method = c("camera", "audio"),
   valid_sites = NULL,
   issue_sites = NULL,
-  coord_path = NULL
+  coord_path = NULL,
+  problem_days = NULL
 )
 }
 \arguments{
@@ -26,6 +27,10 @@ read_deployment_file(
 
 \item{coord_path}{Optional character. Path to coordinate CSV file.
 Required when \code{method = "audio"}.}
+
+\item{problem_days}{Optional data frame containing site-day combinations
+to exclude due to insufficient sampling effort. Must contain columns
+\code{"sites"} (lowercase site names) and \code{"date"}.}
 }
 \value{
 A tibble with columns:
@@ -46,17 +51,9 @@ a standardised data frame with consistent structure across methods.
 \details{
 For camera data, start and end dates must already exist in the file.
 For audio data, year/month/day columns are combined to compute
-start and end dates per site, and coordinates are joined externally.
+start and end dates per site. Optionally, days with insufficient
+sampling effort can be removed before calculating deployment periods.
 }
-\examples{
-\dontrun{
-read_deployment_file(
-  path = "deployments.csv",
-  site_col = "deployment_id",
-  method = "camera"
-)
-}
-
-#' @author Jose W. Ribeiro Jr. ("Xuleta")
-
+\author{
+Jose W. Ribeiro Jr. ("Xuleta")
 }
