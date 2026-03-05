@@ -5,8 +5,8 @@
 #'
 #' For camera data, start and end dates must already exist in the file.
 #' For audio data, year/month/day columns are combined to compute
-#' start and end dates per site. Optionally, days with insufficient
-#' sampling effort can be removed before calculating deployment periods.
+#' start and end dates per site. Days with fewer recordings than
+#' `min_recordings` are excluded before calculating deployment periods.
 #'
 #' @param path Character. Path to deployment CSV file.
 #' @param site_col Character. Column name containing site identifiers.
@@ -14,10 +14,12 @@
 #' @param valid_sites Optional character vector of valid site names to retain.
 #' @param issue_sites Optional character vector of site names to exclude.
 #' @param coord_path Optional character. Path to coordinate CSV file.
-#' Required when `method = "audio"`.
-#' @param problem_days Optional data frame containing site-day combinations
-#' to exclude due to insufficient sampling effort. Must contain columns
-#' `"sites"` (lowercase site names) and `"date"`.
+#'   Required when `method = "audio"`.
+#' @param min_recordings Optional numeric. Minimum number of recordings
+#'   required to keep a site-day. Days below this threshold are excluded
+#'   before computing start/end dates. Only used when `method = "audio"`.
+#'   Requires a `recording_count` column in the input file. Default is NULL
+#'   (no filtering).
 #'
 #' @return A tibble with columns:
 #' \describe{
@@ -33,13 +35,13 @@
 #' @author Jose W. Ribeiro Jr. ("Xuleta")
 #'
 #' @export
-read_deployment_file <- function(path,
-                                 site_col,
-                                 method = c("camera", "audio"),
-                                 valid_sites = NULL,
-                                 issue_sites = NULL,
-                                 coord_path = NULL,
-                                 problem_days = NULL) {
+read_deployment_file3 <- function(path,
+                                  site_col,
+                                  method = c("camera", "audio"),
+                                  valid_sites = NULL,
+                                  issue_sites = NULL,
+                                  coord_path = NULL,
+                                  min_recordings = NULL) {
 
   method <- match.arg(method)
 
@@ -99,39 +101,36 @@ read_deployment_file <- function(path,
       rlang::abort("coord_path must be provided for audio method.")
     }
 
-    coords <- readr::read_csv(coord_path,
-                              show_col_types = FALSE)
+    # Normalise site names to lowercase BEFORE joining
+    coords <- readr::read_csv(coord_path, show_col_types = FALSE) %>%
+      dplyr::mutate(site_name = tolower(site_name))
 
     df <- df %>%
-      dplyr::mutate(
-        date = lubridate::make_date(year, month, day)
-      ) %>%
       dplyr::rename(sites = !!rlang::sym(site_col)) %>%
       dplyr::mutate(
-        sites = tolower(sites)
+        sites = tolower(sites),
+        date  = lubridate::make_date(year, month, day)
       )
 
-    # -------------------------
-    # REMOVE LOW-EFFORT DAYS
-    # -------------------------
-    if (!is.null(problem_days)) {
+    # ------------------------------------
+    # FILTER LOW-EFFORT DAYS (by threshold)
+    # ------------------------------------
+    if (!is.null(min_recordings)) {
 
-      if (!all(c("sites", "date") %in% names(problem_days))) {
+      if (!"recording_count" %in% names(df)) {
         rlang::abort(
-          "problem_days must contain columns 'sites' and 'date'"
+          "Column 'recording_count' not found. It is required when min_recordings is set."
         )
       }
 
-      problem_days <- problem_days %>%
-        dplyr::mutate(
-          sites = tolower(sites),
-          date  = as.Date(date)
-        ) %>%
-        dplyr::select(sites, date)
+      n_before <- nrow(df)
 
       df <- df %>%
-        dplyr::anti_join(problem_days,
-                         by = c("sites", "date"))
+        dplyr::filter(recording_count >= min_recordings)
+
+      n_removed <- n_before - nrow(df)
+      message(sprintf("Removed %d site-day(s) with fewer than %d recordings.",
+                      n_removed, min_recordings))
     }
 
     df <- df %>%
@@ -140,14 +139,13 @@ read_deployment_file <- function(path,
       dplyr::summarise(
         start_date = min(date),
         end_date   = max(date),
-        .groups = "drop"
+        .groups    = "drop"
       )
   }
 
   # -------------------------
   # COMMON PROCESSING
   # -------------------------
-
   df <- df %>%
     dplyr::mutate(
       method     = method,
