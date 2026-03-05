@@ -35,7 +35,7 @@
 #' @author Jose W. Ribeiro Jr. ("Xuleta")
 #'
 #' @export
-read_deployment_file3 <- function(path,
+read_deployment_file <- function(path,
                                   site_col,
                                   method = c("camera", "audio"),
                                   valid_sites = NULL,
