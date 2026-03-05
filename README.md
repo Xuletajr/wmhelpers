@@ -76,6 +76,7 @@ Functions are organized by module. All exported functions are documented and acc
 | `read_deployment_file()` | Read and standardize deployment metadata (start/end dates per site) |
 | `read_issue_sites()` | Read and standardize site exclusion flags from a Project Tracking Google Sheets document |
 | `read_species_list()` | Read, clean, and standardize species metadata from a Project Tracking sheet |
+| `set_low_effort_days_to_na()` | Set low-effort sampling days to NA in a 3D detection array |
 | `validate_detection_array()` | Validate consistency between detection arrays and raw multi-method detection data |
 
 ---
