@@ -32,7 +32,6 @@
 #' @return Invisibly returns the \code{ggplot} object.
 #'
 #' @importFrom ggplot2 ggplot aes geom_ribbon geom_line theme_minimal labs ggsave scale_x_date
-#' @importFrom stats as.Date
 #'
 #' @export
 plot_detection_julian <- function(
