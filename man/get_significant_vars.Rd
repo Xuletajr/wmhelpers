@@ -41,5 +41,5 @@ sig_vars <- get_significant_vars(out_bestmodel$beta.comm.samples)
 
 }
 \author{
-Jose W. Ribeiro Jr. ("Xuleta")
+Thiago Bicudo
 }
