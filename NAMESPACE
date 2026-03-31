@@ -2,6 +2,7 @@
 
 export(build_detection_array)
 export(coalesce_suffix_pairs)
+export(get_significant_vars)
 export(plot_bar_species)
 export(read_audio_detections)
 export(read_camtrap_detections)
