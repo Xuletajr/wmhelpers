@@ -32,8 +32,6 @@
 #'
 #' @importFrom stats quantile sd
 #'
-#' @author Thiago Bicudo
-#'
 #' @export
 build_param_table <- function(
     samples,
