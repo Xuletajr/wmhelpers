@@ -26,7 +26,7 @@
 #' @importFrom dplyr inner_join rename
 #' @importFrom ggplot2 ggplot aes geom_point geom_smooth theme_minimal labs annotate
 #'
-#'#' @author Thiago Bicudo
+#' @author Thiago Bicudo
 #'
 #' @export
 plot_occ_vs_det <- function(
