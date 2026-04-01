@@ -55,11 +55,13 @@ extract_mean_prob <- function(samples, class_list, spp_reference) {
 
   # ── Helper: summarise posterior ─────────────────────────────────────────────
   summarise_post <- function(x) {
+    q <- quantile(x, c(0.025, 0.975), names = FALSE)
+
     c(
       mean = mean(x),
       sd   = sd(x),
-      ciL  = quantile(x, 0.025),
-      ciU  = quantile(x, 0.975)
+      ciL  = q[1],
+      ciU  = q[2]
     )
   }
 
