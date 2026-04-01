@@ -2,6 +2,7 @@
 
 export(build_detection_array)
 export(build_param_table)
+export(check_ess)
 export(check_rhat)
 export(coalesce_suffix_pairs)
 export(export_occ_plots)
