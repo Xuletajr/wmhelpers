@@ -2,6 +2,9 @@
 #'
 #' Computes summary statistics (mean, SD, and 95\% credible intervals)
 #' for site-level occupancy probabilities from posterior samples.
+#' Extracts posterior samples from the 3D array
+#' (\code{samples × species × sites}) and computes summary statistics
+#' across the MCMC dimension.
 #'
 #' @param out_bestmodel Fitted model object containing
 #'   \code{psi.samples} and \code{sp.names}.
@@ -15,11 +18,6 @@
 #'   \item{\code{cri975}}{Upper bound of 95\% credible interval}
 #' }
 #' Each matrix has species as rows and sites as columns.
-#'
-#' @description
-#' Extracts posterior samples from the 3D array
-#' (\code{samples × species × sites}) and computes summary statistics
-#' across the MCMC dimension.
 #'
 #' @author Thiago Bicudo
 #'
