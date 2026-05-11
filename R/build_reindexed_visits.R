@@ -8,6 +8,8 @@
 #' with \code{NA} to accommodate the site with the highest number of
 #' valid visits.
 #'
+#' @author Jose W. Ribeiro Jr. ("Xuleta")
+#'
 #' @param y A 3-dimensional array of dimensions \code{[species × sites × time]},
 #'   where \code{NA} indicates the absence of a sampling event for a given
 #'   species, site, and time step.

@@ -36,3 +36,6 @@ history.
 A time step is considered valid for a given site if at least one species
 has a non-\code{NA} value in that column of the site matrix.
 }
+\author{
+Jose W. Ribeiro Jr. ("Xuleta")
+}
