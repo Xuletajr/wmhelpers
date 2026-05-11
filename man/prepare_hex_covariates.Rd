@@ -2,44 +2,36 @@
 % Please edit documentation in R/msom_predict.R
 \name{prepare_hex_covariates}
 \alias{prepare_hex_covariates}
-\title{Prepare Hexgrid Covariate Matrix for Prediction}
+\title{Prepare Hexagonal Grid Covariates for MSOM Prediction}
 \usage{
 prepare_hex_covariates(
   hexgrid_variables,
   out_bestmodel,
+  scaling_params,
   extra_columns = NULL,
   scale_vars = TRUE
 )
 }
 \arguments{
-\item{hexgrid_variables}{Data frame as returned by
-\code{\link{load_hexgrid_variables}}.}
+\item{hexgrid_variables}{Data frame containing the hexagonal grid covariates.}
 
-\item{out_bestmodel}{Fitted model object. \code{out_bestmodel$x.names} is
-used to determine which columns to select (intercept excluded
-automatically).}
+\item{out_bestmodel}{Fitted model object containing \code{x.names}.}
 
-\item{extra_columns}{Optional named numeric vector of additional design
-matrix columns to add after the intercept (e.g. dummy-coded categorical
-predictors that are not in \code{hexgrid_variables}).
-Example: \code{c(regionSt_John = 0, regionSt_Thomas = 0)}.
-Defaults to \code{NULL}.}
+\item{scaling_params}{Data frame with columns \code{variable}, \code{mean},
+and \code{sd} — computed from the original training sites, not the hexgrid.}
 
-\item{scale_vars}{Logical. If \code{TRUE} (default), all selected numeric
-columns are standardised using \code{scale()}. Set to \code{FALSE} if
-your hexgrid data is already scaled.}
+\item{extra_columns}{Optional named list of additional columns to append to
+the design matrix (e.g. dummy or categorical variables). Default is \code{NULL}.}
+
+\item{scale_vars}{Logical. If \code{TRUE} (default), scales covariates using
+\code{scaling_params}.}
 }
 \value{
-A named numeric matrix with \code{nrow(hexgrid_variables)} rows
-and columns: \code{(Intercept)}, all selected covariates, and any
-\code{extra_columns}.
+A numeric matrix with an intercept column followed by the scaled
+model covariates, ready for prediction.
 }
 \description{
-Selects only the continuous covariates used in the fitted model, scales
-each column (mean = 0, sd = 1), and prepends an intercept column, returning
-a numeric matrix ready to pass to \code{predict()}.
-}
-\details{
-After scaling, the function prints the column means and SDs as a quick
-sanity check (means should be ≈ 0, SDs ≈ 1).
+Selects and scales the covariates needed by the best model from the
+hexagonal grid data, using the training-site mean and SD to ensure
+predictions are on the same scale as the fitted model.
 }

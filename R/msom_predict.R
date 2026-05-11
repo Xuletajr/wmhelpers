@@ -108,77 +108,123 @@ load_hexgrid_variables <- function(env_path,
 # 2. prepare_hex_covariates
 # =============================================================================
 
-#' Prepare Hexgrid Covariate Matrix for Prediction
+# =============================================================================
+# 2.1. Extract Scaling Parameters from Training Sites
+# =============================================================================
+
+#' Extract Scaling Parameters from Training Sites
 #'
-#' Selects only the continuous covariates used in the fitted model, scales
-#' each column (mean = 0, sd = 1), and prepends an intercept column, returning
-#' a numeric matrix ready to pass to \code{predict()}.
+#' Computes the mean and SD of each covariate from the training sites,
+#' to be used later for scaling the hexagonal grid covariates.
 #'
-#' @param hexgrid_variables Data frame as returned by
-#'   \code{\link{load_hexgrid_variables}}.
-#' @param out_bestmodel Fitted model object. \code{out_bestmodel$x.names} is
-#'   used to determine which columns to select (intercept excluded
-#'   automatically).
-#' @param extra_columns Optional named numeric vector of additional design
-#'   matrix columns to add after the intercept (e.g. dummy-coded categorical
-#'   predictors that are not in \code{hexgrid_variables}).
-#'   Example: \code{c(regionSt_John = 0, regionSt_Thomas = 0)}.
-#'   Defaults to \code{NULL}.
-#' @param scale_vars Logical. If \code{TRUE} (default), all selected numeric
-#'   columns are standardised using \code{scale()}. Set to \code{FALSE} if
-#'   your hexgrid data is already scaled.
+#' @param variables_of_interest Data frame of training-site covariates.
+#' @param get_variables_of_interest Character vector of variable names to retain.
+#' @param rename_vars Optional named character vector to rename columns before
+#'   selecting. E.g. \code{c(agb = "agb_mean", slope = "slope_mean")}.
+#'   Default is \code{NULL}.
 #'
-#' @return A named numeric matrix with \code{nrow(hexgrid_variables)} rows
-#'   and columns: \code{(Intercept)}, all selected covariates, and any
-#'   \code{extra_columns}.
+#' @return A data frame with columns \code{variable}, \code{mean}, and \code{sd}.
 #'
-#' @details
-#' After scaling, the function prints the column means and SDs as a quick
-#' sanity check (means should be ≈ 0, SDs ≈ 1).
+#' @export
+get_scaling_params <- function(variables_of_interest,
+                               get_variables_of_interest,
+                               rename_vars = NULL) {
+
+  df <- variables_of_interest
+
+  if (!is.null(rename_vars)) {
+    df <- df %>% dplyr::rename(!!!rename_vars)
+  }
+
+  df %>%
+    dplyr::select(dplyr::all_of(get_variables_of_interest)) %>%
+    dplyr::summarise(dplyr::across(
+      dplyr::everything(),
+      list(
+        mean = ~ mean(., na.rm = TRUE),
+        sd   = ~ sd(.,   na.rm = TRUE)
+      )
+    )) %>%
+    tidyr::pivot_longer(
+      dplyr::everything(),
+      names_to      = c("variable", "stat"),
+      names_pattern = "^(.+)_(mean|sd)$"
+    ) %>%
+    tidyr::pivot_wider(names_from = stat, values_from = value)
+}
+
+# =============================================================================
+# 2.2 Prepare Hexagonal Grid Covariates for MSOM Prediction
+# =============================================================================
+
+#' Prepare Hexagonal Grid Covariates for MSOM Prediction
 #'
-#' @importFrom dplyr select mutate across where
+#' Selects and scales the covariates needed by the best model from the
+#' hexagonal grid data, using the training-site mean and SD to ensure
+#' predictions are on the same scale as the fitted model.
+#'
+#' @param hexgrid_variables Data frame containing the hexagonal grid covariates.
+#' @param out_bestmodel Fitted model object containing \code{x.names}.
+#' @param scaling_params Data frame with columns \code{variable}, \code{mean},
+#'   and \code{sd} — computed from the original training sites, not the hexgrid.
+#' @param extra_columns Optional named list of additional columns to append to
+#'   the design matrix (e.g. dummy or categorical variables). Default is \code{NULL}.
+#' @param scale_vars Logical. If \code{TRUE} (default), scales covariates using
+#'   \code{scaling_params}.
+#'
+#' @return A numeric matrix with an intercept column followed by the scaled
+#'   model covariates, ready for prediction.
 #'
 #' @export
 prepare_hex_covariates <- function(hexgrid_variables,
-                                    out_bestmodel,
-                                    extra_columns = NULL,
-                                    scale_vars    = TRUE) {
-
+                                   out_bestmodel,
+                                   scaling_params,
+                                   extra_columns = NULL,
+                                   scale_vars    = TRUE) {
   stopifnot(
-    "hexgrid_variables must be a data frame" = is.data.frame(hexgrid_variables),
-    "out_bestmodel must have x.names"        = !is.null(out_bestmodel$x.names)
+    "hexgrid_variables must be a data frame"    = is.data.frame(hexgrid_variables),
+    "out_bestmodel must have x.names"           = !is.null(out_bestmodel$x.names),
+    "scaling_params must have variable/mean/sd" = all(c("variable", "mean", "sd") %in% names(scaling_params))
   )
 
   # Model covariates excluding the intercept
-  model_vars <- setdiff(out_bestmodel$x.names, "(Intercept)")
-
+  model_vars   <- setdiff(out_bestmodel$x.names, "(Intercept)")
   missing_vars <- setdiff(model_vars, names(hexgrid_variables))
+
   if (length(missing_vars) > 0)
     stop("Columns missing from hexgrid_variables: ",
          paste(missing_vars, collapse = ", "), call. = FALSE)
 
-  # ── Select and optionally scale ───────────────────────────────────────────────
+  # ── Select and optionally scale using training-site parameters ────────────
   hex_covs <- hexgrid_variables %>%
     dplyr::select(dplyr::all_of(model_vars))
 
   if (scale_vars) {
     hex_covs <- hex_covs %>%
-      dplyr::mutate(dplyr::across(dplyr::where(is.numeric), scale),
-                    .keep = "unused")
+      dplyr::mutate(dplyr::across(
+        dplyr::where(is.numeric),
+        ~ {
+          var_name <- dplyr::cur_column()
+          mu <- scaling_params$mean[scaling_params$variable == var_name]
+          sg <- scaling_params$sd[scaling_params$variable == var_name]
+          if (length(mu) == 0 || length(sg) == 0)
+            stop("No scaling params found for variable: ", var_name, call. = FALSE)
+          (. - mu) / sg
+        }
+      ))
   }
 
-  # ── Sanity check ──────────────────────────────────────────────────────────────
+  # ── Sanity check ──────────────────────────────────────────────────────────
   message("Column means after scaling (should be ≈ 0):")
-  print(round(apply(hex_covs, 2, mean), 5))
+  print(round(colMeans(hex_covs), 5))
   message("Column SDs after scaling (should be ≈ 1):")
-  print(round(apply(hex_covs, 2, sd),   5))
+  print(round(apply(hex_covs, 2, sd), 5))
 
-  # ── Build design matrix with intercept ────────────────────────────────────────
+  # ── Build design matrix with intercept ───────────────────────────────────
   design <- data.frame("(Intercept)" = 1,
                        hex_covs,
                        check.names = FALSE)
 
-  # Add any extra dummy/categorical columns
   if (!is.null(extra_columns)) {
     for (col_name in names(extra_columns)) {
       design[[col_name]] <- extra_columns[[col_name]]
