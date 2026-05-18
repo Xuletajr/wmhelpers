@@ -2,17 +2,23 @@
 % Please edit documentation in R/extract_mean_prob.R
 \name{extract_mean_prob}
 \alias{extract_mean_prob}
-\title{Extract Species-Level Occupancy or Detection Probabilities}
+\title{Compute mean detection or occupancy probability per species from MCMC samples}
 \usage{
 extract_mean_prob(samples, class_list, spp_reference)
 }
 \arguments{
-\item{samples}{Matrix of MCMC samples (\code{[nsamp × parameters]}).
+\item{samples}{A matrix or \code{mcmc} object of MCMC samples with named
+columns following the pattern \code{"parameter-species"} (e.g.,
+\code{"(Intercept)-Alethe castanea"}, \code{"numD-Alethe castanea"}).
 For occupancy use \code{out_bestmodel$beta.samples}; for detection use
-\code{out_bestmodel$alpha.samples}.}
+\code{out_bestmodel$alpha.samples}. For integrated models, pass the
+relevant column slice for each data source separately
+(e.g., \code{as.matrix(alpha.samples)[, 1:267]}).}
 
-\item{class_list}{Named list mapping class labels to coefficient names,
-or \code{NULL} for intercept-only models.
+\item{class_list}{A named list where each element defines one category.
+Use \code{NULL} for the reference category (intercept only). For other
+categories, provide the coefficient prefix as a character string matching
+the column naming pattern in \code{samples}.
 
 Example (intercept only):
 \code{list(survey2025 = NULL)}
@@ -20,17 +26,36 @@ Example (intercept only):
 Example (categorical effect with reference level):
 \code{list(survey2022 = NULL, survey2023 = "year2023")}}
 
-\item{spp_reference}{Data frame with at least a \code{species} column,
-used to validate and join species names.}
+\item{spp_reference}{A data frame with a column named \code{species},
+used to validate species names against those derived from column names.}
 }
 \value{
-A \code{tibble} with columns:
-\code{species}, \code{param_spp}, \code{class},
-\code{mean}, \code{sd}, \code{ciL}, \code{ciU}.
+A \code{tibble} with one row per species per class, containing
+columns \code{species}, \code{param_spp}, \code{class}, \code{mean},
+\code{sd}, \code{ciL}, and \code{ciU}.
 }
 \description{
-Back-transforms MCMC samples to the probability scale (logit → probability)
-and summarises species-level estimates across one or more classes.
+Back-transforms MCMC samples to the probability scale via \code{plogis()}
+and returns posterior summaries of detection or occupancy probability for
+each species, optionally adding species-specific covariate coefficients to
+the intercept. Designed for outputs of multi-species occupancy models fitted
+with \code{spOccupancy}, including single-method and integrated models.
+}
+\details{
+Column names in \code{samples} must follow the \code{spOccupancy} convention
+\code{"parameter-species"}. Intercept columns are identified by the pattern
+\code{"(Intercept)"}. Species names are extracted from these columns and used
+to construct the full column names for any additional coefficient
+(e.g., \code{"year2023-Alethe castanea"}).
+
+For integrated models (e.g., audio + camera trap), call this function
+separately for each data source by slicing the relevant columns from
+\code{alpha.samples} before passing to this function.
+
+A warning is issued if the species derived from column names differ in
+composition or order from \code{spp_reference}. Execution proceeds using
+the order from column names, which is the order used internally for all
+computations.
 }
 \author{
 Thiago Bicudo
