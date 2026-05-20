@@ -45,10 +45,17 @@
 #' separately for each data source by slicing the relevant columns from
 #' \code{alpha.samples} before passing to this function.
 #'
-#' A warning is issued if the species derived from column names differ in
-#' composition or order from \code{spp_reference}. Execution proceeds using
-#' the order from column names, which is the order used internally for all
-#' computations.
+#' Two types of warnings may be issued when species from column names differ
+#' from \code{spp_reference}:
+#' \itemize{
+#'   \item \strong{Order mismatch only}: sets are identical but order differs.
+#'     This is expected in integrated models. No action required.
+#'   \item \strong{Species mismatch}: some species are present in one source
+#'     but not the other. Verify that the correct \code{spp_reference} was
+#'     provided.
+#' }
+#' In both cases, execution proceeds using species names extracted from column
+#' names, which is the order used internally for all computations.
 #'
 #' @importFrom dplyr bind_rows as_tibble select
 #'
@@ -61,16 +68,16 @@ extract_mean_prob <- function(samples, class_list, spp_reference) {
   }
 
   stopifnot(
-    "samples must be a matrix or mcmc object"      = is.matrix(samples),
-    "samples must have named columns"              = !is.null(colnames(samples)),
-    "class_list must be a named list"              = is.list(class_list) &&
+    "samples must be a matrix or mcmc object"       = is.matrix(samples),
+    "samples must have named columns"               = !is.null(colnames(samples)),
+    "class_list must be a named list"               = is.list(class_list) &&
       !is.null(names(class_list)),
-    "spp_reference must be a data frame"           = is.data.frame(spp_reference),
+    "spp_reference must be a data frame"            = is.data.frame(spp_reference),
     "spp_reference must contain a 'species' column" = "species" %in%
       names(spp_reference)
   )
 
-  # ── Extract intercept columns and derive species names ────────────────────
+  # ── Extract intercept columns and derive species names ─────────────────────
   intercept_cols <- grep("\\(Intercept\\)", colnames(samples), value = TRUE)
 
   if (length(intercept_cols) == 0) {
@@ -79,11 +86,27 @@ extract_mean_prob <- function(samples, class_list, spp_reference) {
 
   spp_names <- sub("^[^-]+-", "", intercept_cols)
 
+  # ── Validate species against spp_reference ─────────────────────────────────
   if (!identical(spp_names, spp_reference$species)) {
-    warning(
-      "Species derived from intercept columns do not match spp_reference. ",
-      "Proceeding with species names extracted from column names."
-    )
+
+    spp_diff_content <- length(setdiff(spp_names, spp_reference$species)) > 0 ||
+      length(setdiff(spp_reference$species, spp_names)) > 0
+
+    if (spp_diff_content) {
+      warning(
+        "Species mismatch between column names and spp_reference: ",
+        "some species are present in one but not the other. ",
+        "Proceeding with species names extracted from column names. ",
+        "Verify that the correct spp_reference was provided."
+      )
+    } else {
+      warning(
+        "Species order differs between column names and spp_reference, ",
+        "but the sets are identical. This is expected in integrated models ",
+        "where site and species ordering may differ across methods. ",
+        "No action required — proceeding with order from column names."
+      )
+    }
   }
 
   # ── Posterior summary helper ───────────────────────────────────────────────

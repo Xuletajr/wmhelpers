@@ -52,10 +52,17 @@ For integrated models (e.g., audio + camera trap), call this function
 separately for each data source by slicing the relevant columns from
 \code{alpha.samples} before passing to this function.
 
-A warning is issued if the species derived from column names differ in
-composition or order from \code{spp_reference}. Execution proceeds using
-the order from column names, which is the order used internally for all
-computations.
+Two types of warnings may be issued when species from column names differ
+from \code{spp_reference}:
+\itemize{
+\item \strong{Order mismatch only}: sets are identical but order differs.
+This is expected in integrated models. No action required.
+\item \strong{Species mismatch}: some species are present in one source
+but not the other. Verify that the correct \code{spp_reference} was
+provided.
+}
+In both cases, execution proceeds using species names extracted from column
+names, which is the order used internally for all computations.
 }
 \author{
 Thiago Bicudo
