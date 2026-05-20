@@ -3,9 +3,9 @@
 #' Generates and saves species-level marginal effect plots for a given
 #' covariate from a fitted multi-species occupancy model. Each plot shows
 #' posterior mean estimates with 95\% credible intervals per species, coloured
-#' by effect direction. Supports optional faceting by guild, habitat, or any
-#' grouping variable, and automatic subset splitting for birds (\code{Aves})
-#' when faceting by guild or habitat.
+#' by effect direction. Supports optional faceting by any grouping variable
+#' and optional splitting of the data into two subsets based on a specific
+#' value of the facet variable.
 #'
 #' @author Jose W. Ribeiro Jr. ("Xuleta") and Thiago Bicudo
 #'
@@ -42,11 +42,16 @@
 #' @param facet_var Character or \code{NULL}. Column name in \code{data} to
 #'   use for faceting (e.g., \code{"guild"}, \code{"habitat"}, \code{"group"}).
 #'   Use \code{NULL} to suppress faceting. Defaults to \code{NULL}.
+#' @param split_by Character or \code{NULL}. A specific value of
+#'   \code{facet_var} used to split the data into two subsets, generating two
+#'   separate plots: one for species matching \code{split_by} and one for all
+#'   others. For example, \code{split_by = "Invertivore"} with
+#'   \code{facet_var = "guild"} produces one plot for invertivores and one
+#'   for all other guilds. Use \code{NULL} to suppress splitting.
+#'   Defaults to \code{NULL}.
 #' @param taxa Character or \code{NULL}. Taxonomic group to filter by (e.g.,
 #'   \code{"Aves"}, \code{"Mammalia"}). Use \code{"ALL"} or \code{NULL} to
-#'   include all species. When \code{taxa = "Aves"} and \code{facet_var} is
-#'   \code{"guild"} or \code{"habitat"}, the data is automatically split into
-#'   two subsets with separate plots. Defaults to \code{NULL}.
+#'   include all species. Defaults to \code{NULL}.
 #' @param dodge_labels Logical. If \code{TRUE}, y-axis labels are staggered
 #'   using \code{guide_axis(n.dodge = 2)} to reduce overlap. Defaults to
 #'   \code{FALSE}.
@@ -87,15 +92,14 @@
 #' Special characters in the covariate name (parentheses, carets, spaces,
 #' slashes, colons) are removed or replaced with underscores.
 #'
-#' When \code{taxa = "Aves"} and \code{facet_var = "guild"}, the data is
-#' split into \code{"Invertivore"} and \code{"Other_Guilds"} subsets, each
-#' saved as a separate PNG. The same split occurs for \code{facet_var =
-#' "habitat"} using \code{"Forest"} and non-forest species.
+#' When \code{split_by} is provided, the suffix of the split subset value
+#' is used directly (e.g., \code{"Invertivore"}) and the complementary
+#' subset is named \code{"Other_<facet_var>"} (e.g., \code{"Other_guild"}).
 #'
 #' High-resolution output (30 cm x 55 cm at \code{2 * dpi}) is used when
-#' \code{taxa} is \code{NULL} or when faceting by \code{"habitat"} or
-#' \code{"guild"}. Standard resolution (12 x 18 inches at \code{dpi}) is
-#' used otherwise.
+#' \code{taxa} is \code{NULL} or \code{"ALL"}, or when \code{split_by} is
+#' provided. Standard resolution (12 x 18 inches at \code{dpi}) is used
+#' otherwise.
 #'
 #' Typical usage in an integrated model workflow:
 #' \preformatted{
@@ -105,14 +109,15 @@
 #'   "numD"       = "Number of camera trap nights"
 #' )
 #'
-#' # Audio - birds by guild
+#' # Audio - all species by guild, split invertivores from other guilds
 #' plot_covariate_effects(
 #'   data         = alpha_cov_aud,
 #'   covariate    = "days",
 #'   model_type   = "detection",
 #'   xlabel_dict  = xlabel_dict,
 #'   facet_var    = "guild",
-#'   taxa         = "Aves",
+#'   split_by     = "Invertivore",
+#'   taxa         = "ALL",
 #'   text.size    = 9,
 #'   tag          = "audio",
 #'   output_dir   = config$output_figures,
@@ -120,12 +125,15 @@
 #'   dpi          = config$dpi
 #' )
 #'
-#' # Camera trap - all species
+#' # Camera trap - mammals, no split
 #' plot_covariate_effects(
 #'   data         = alpha_cov_cam,
 #'   covariate    = "numD",
 #'   model_type   = "detection",
 #'   xlabel_dict  = xlabel_dict,
+#'   facet_var    = NULL,
+#'   split_by     = NULL,
+#'   taxa         = "Mammalia",
 #'   text.size    = 9,
 #'   tag          = "camtrap",
 #'   output_dir   = config$output_figures,
@@ -148,6 +156,7 @@ plot_covariate_effects <- function(data,
                                    xlabel_dict,
                                    title           = NULL,
                                    facet_var       = NULL,
+                                   split_by        = NULL,
                                    taxa            = NULL,
                                    dodge_labels    = FALSE,
                                    text.size,
@@ -166,27 +175,25 @@ plot_covariate_effects <- function(data,
   .validate_plot_inputs(data, covariate, text.size)
 
   stopifnot(
-    "model_type must be a single string"     = is.character(model_type) &&
+    "model_type must be a single string"           = is.character(model_type) &&
       length(model_type) == 1,
-    "xlabel_dict must be a named character vector" =
-      is.character(xlabel_dict) &&
+    "xlabel_dict must be a named character vector" = is.character(xlabel_dict) &&
       !is.null(names(xlabel_dict)),
-    "output_dir must be a single string"     = is.character(output_dir) &&
+    "output_dir must be a single string"           = is.character(output_dir) &&
       length(output_dir) == 1,
-    "project_name must be a character"       = is.character(project_name),
-    "dpi must be a positive number"          = is.numeric(dpi) && dpi > 0,
-    "color_neg must be a character string"   = is.character(color_neg),
-    "color_none must be a character string"  = is.character(color_none),
-    "color_pos must be a character string"   = is.character(color_pos),
-    "color_strip must be a character string" = is.character(color_strip),
-    "color_text must be a character string"  = is.character(color_text)
+    "project_name must be a character"             = is.character(project_name),
+    "dpi must be a positive number"                = is.numeric(dpi) && dpi > 0,
+    "color_neg must be a character string"         = is.character(color_neg),
+    "color_none must be a character string"        = is.character(color_none),
+    "color_pos must be a character string"         = is.character(color_pos),
+    "color_strip must be a character string"       = is.character(color_strip),
+    "color_text must be a character string"        = is.character(color_text)
   )
 
   # Normalise output_dir — add trailing slash if missing
   if (!endsWith(output_dir, "/")) output_dir <- paste0(output_dir, "/")
 
   # ── Resolve x-axis label from project dictionary ──────────────────────────
-  # Falls back to the raw covariate name if not found in xlabel_dict
   x_axis_label <- if (covariate %in% names(xlabel_dict)) {
     xlabel_dict[[covariate]]
   } else {
@@ -206,7 +213,7 @@ plot_covariate_effects <- function(data,
   filtered_data <- .prepare_plot_data(data, covariate, taxa)
 
   # ── Generate plot subsets ──────────────────────────────────────────────────
-  plot_subsets <- .get_plot_subsets(filtered_data, taxa, facet_var)
+  plot_subsets <- .get_plot_subsets(filtered_data, facet_var, split_by)
 
   # ── Build, save, and collect plots ────────────────────────────────────────
   plots <- vector("list", length(plot_subsets))
@@ -284,8 +291,6 @@ plot_covariate_effects <- function(data,
     data <- data %>% dplyr::filter(group == taxa)
   }
 
-  # Anchor pattern to start of string to prevent partial matches
-  # e.g., "agb" must not match "int_agb_ndvi-Species"
   covariate_pattern <- paste0("^", stringr::str_escape(covariate), "-")
 
   data %>%
@@ -294,38 +299,45 @@ plot_covariate_effects <- function(data,
 }
 
 
-.get_plot_subsets <- function(data, taxa, facet_var) {
+.get_plot_subsets <- function(data, facet_var, split_by) {
 
-  if (is.null(taxa)) {
+  # ── No split requested — return full data as single subset ─────────────────
+  if (is.null(split_by) || is.null(facet_var)) {
     return(list(list(data = data, suffix = "", text_size_override = NULL)))
   }
 
-  if (taxa == "Aves" && !is.null(facet_var)) {
-
-    if (facet_var == "guild") {
-      return(list(
-        list(data               = dplyr::filter(data, guild == "Invertivore"),
-             suffix             = "Invertivore",
-             text_size_override = NULL),
-        list(data               = dplyr::filter(data, guild != "Invertivore"),
-             suffix             = "Other_Guilds",
-             text_size_override = 14)
-      ))
-    }
-
-    if (facet_var == "habitat") {
-      return(list(
-        list(data               = dplyr::filter(data, habitat == "Forest"),
-             suffix             = "Forest_Species",
-             text_size_override = NULL),
-        list(data               = dplyr::filter(data, habitat != "Forest"),
-             suffix             = "Other_Species",
-             text_size_override = 14)
-      ))
-    }
+  # ── Validate facet_var exists in data ──────────────────────────────────────
+  if (!facet_var %in% names(data)) {
+    stop(
+      "facet_var '", facet_var, "' not found in data. ",
+      "Cannot split by '", split_by, "'."
+    )
   }
 
-  list(list(data = data, suffix = "", text_size_override = NULL))
+  # ── Validate split_by value exists in facet_var column ────────────────────
+  available_vals <- unique(data[[facet_var]])
+
+  if (!split_by %in% available_vals) {
+    stop(
+      "split_by value '", split_by, "' not found in column '",
+      facet_var, "'.\n",
+      "Available values: ",
+      paste(sort(available_vals[!is.na(available_vals)]), collapse = ", ")
+    )
+  }
+
+  # ── Build two subsets ─────────────────────────────────────────────────────
+  suffix_in  <- split_by
+  suffix_out <- paste0("Other_", facet_var)
+
+  list(
+    list(data               = dplyr::filter(data, .data[[facet_var]] == split_by),
+         suffix             = suffix_in,
+         text_size_override = NULL),
+    list(data               = dplyr::filter(data, .data[[facet_var]] != split_by),
+         suffix             = suffix_out,
+         text_size_override = 14)
+  )
 }
 
 
@@ -341,14 +353,14 @@ plot_covariate_effects <- function(data,
       size = 4, shape = 16
     ) +
     ggplot2::geom_errorbar(
-      ggplot2::aes(y    = common_name,
-                   xmin = CRI_low,
-                   xmax = CRI_high,
+      ggplot2::aes(y      = common_name,
+                   xmin   = CRI_low,
+                   xmax   = CRI_high,
                    colour = Effect),
       linewidth = 1.5, width = 0.3
     ) +
     ggplot2::scale_colour_manual(
-      values = c("Negative" = color_neg,
+      values = c("Negative"  = color_neg,
                  "No effect" = color_none,
                  "Positive"  = color_pos)
     ) +
@@ -369,8 +381,8 @@ plot_covariate_effects <- function(data,
     ggplot2::theme(
       axis.title.x      = ggplot2::element_text(size = 18),
       axis.text.x       = ggplot2::element_text(size = text_size),
-      axis.text.y       = ggplot2::element_text(size  = text_size,
-                                                hjust = 1,
+      axis.text.y       = ggplot2::element_text(size   = text_size,
+                                                hjust  = 1,
                                                 colour = "black"),
       legend.background = ggplot2::element_rect(colour    = "black",
                                                 linewidth = 0.5),
@@ -449,16 +461,6 @@ plot_covariate_effects <- function(data,
 
   covariate_clean <- .clean_covariate_name(covariate)
 
-  facet_suffix <- if (!is.null(facet_var) &&
-                      !((facet_var == "guild" &&
-                         suffix %in% c("Invertivore", "Other_Guilds")) ||
-                        (facet_var == "habitat" &&
-                         suffix %in% c("Forest_Species", "Other_Species")))) {
-    facet_var
-  } else {
-    ""
-  }
-
   group_suffix <- if (!is.null(taxa_original) && taxa_original == "ALL") {
     "ALL"
   } else if (!is.null(taxa_original)) {
@@ -469,20 +471,21 @@ plot_covariate_effects <- function(data,
 
   parts <- c(
     paste0(output_dir, filename_prefix, "_", model_type, "_", covariate_clean),
-    if (facet_suffix != "")              facet_suffix              else NULL,
-    if (group_suffix != "")              group_suffix              else NULL,
-    if (!is.null(suffix) && suffix != "") suffix                   else NULL,
-    if (nchar(project_name) > 0)         substr(project_name, 1, 10) else NULL,
-    if (!is.null(tag))                   tag                       else NULL
+    if (!is.null(facet_var))                  facet_var                    else NULL,
+    if (group_suffix != "")                   group_suffix                 else NULL,
+    if (!is.null(suffix) && suffix != "")     suffix                       else NULL,
+    if (nchar(project_name) > 0)              substr(project_name, 1, 10)  else NULL,
+    if (!is.null(tag))                        tag                          else NULL
   )
 
   normalizePath(paste(parts, collapse = "_"), winslash = "/", mustWork = FALSE)
 }
 
 
-.should_use_high_quality <- function(taxa, facet_var) {
-  is.null(taxa) ||
-    (!is.null(facet_var) && facet_var %in% c("habitat", "guild"))
+.should_use_high_quality <- function(taxa_original, split_by) {
+  is.null(taxa_original) ||
+    taxa_original == "ALL" ||
+    !is.null(split_by)
 }
 
 
@@ -533,7 +536,7 @@ plot_covariate_effects <- function(data,
                                       taxa_original, suffix, filename_prefix,
                                       tag, output_dir, project_name)
 
-  high_quality <- .should_use_high_quality(taxa_original, facet_var)
+  high_quality <- .should_use_high_quality(taxa_original, suffix)
 
   .save_plot_to_file(plot, filename, high_quality, dpi)
 

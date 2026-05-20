@@ -11,6 +11,7 @@ plot_covariate_effects(
   xlabel_dict,
   title = NULL,
   facet_var = NULL,
+  split_by = NULL,
   taxa = NULL,
   dodge_labels = FALSE,
   text.size,
@@ -66,11 +67,17 @@ information. Defaults to \code{NULL}.}
 use for faceting (e.g., \code{"guild"}, \code{"habitat"}, \code{"group"}).
 Use \code{NULL} to suppress faceting. Defaults to \code{NULL}.}
 
+\item{split_by}{Character or \code{NULL}. A specific value of
+\code{facet_var} used to split the data into two subsets, generating two
+separate plots: one for species matching \code{split_by} and one for all
+others. For example, \code{split_by = "Invertivore"} with
+\code{facet_var = "guild"} produces one plot for invertivores and one
+for all other guilds. Use \code{NULL} to suppress splitting.
+Defaults to \code{NULL}.}
+
 \item{taxa}{Character or \code{NULL}. Taxonomic group to filter by (e.g.,
 \code{"Aves"}, \code{"Mammalia"}). Use \code{"ALL"} or \code{NULL} to
-include all species. When \code{taxa = "Aves"} and \code{facet_var} is
-\code{"guild"} or \code{"habitat"}, the data is automatically split into
-two subsets with separate plots. Defaults to \code{NULL}.}
+include all species. Defaults to \code{NULL}.}
 
 \item{dodge_labels}{Logical. If \code{TRUE}, y-axis labels are staggered
 using \code{guide_axis(n.dodge = 2)} to reduce overlap. Defaults to
@@ -121,9 +128,9 @@ file in \code{output_dir}. The list is returned invisibly.
 Generates and saves species-level marginal effect plots for a given
 covariate from a fitted multi-species occupancy model. Each plot shows
 posterior mean estimates with 95\\% credible intervals per species, coloured
-by effect direction. Supports optional faceting by guild, habitat, or any
-grouping variable, and automatic subset splitting for birds (\code{Aves})
-when faceting by guild or habitat.
+by effect direction. Supports optional faceting by any grouping variable
+and optional splitting of the data into two subsets based on a specific
+value of the facet variable.
 }
 \details{
 Output filenames are constructed from \code{filename_prefix},
@@ -132,15 +139,14 @@ suffixes, \code{project_name} (first 10 characters), and \code{tag}.
 Special characters in the covariate name (parentheses, carets, spaces,
 slashes, colons) are removed or replaced with underscores.
 
-When \code{taxa = "Aves"} and \code{facet_var = "guild"}, the data is
-split into \code{"Invertivore"} and \code{"Other_Guilds"} subsets, each
-saved as a separate PNG. The same split occurs for \code{facet_var =
-"habitat"} using \code{"Forest"} and non-forest species.
+When \code{split_by} is provided, the suffix of the split subset value
+is used directly (e.g., \code{"Invertivore"}) and the complementary
+subset is named \code{"Other_<facet_var>"} (e.g., \code{"Other_guild"}).
 
 High-resolution output (30 cm x 55 cm at \code{2 * dpi}) is used when
-\code{taxa} is \code{NULL} or when faceting by \code{"habitat"} or
-\code{"guild"}. Standard resolution (12 x 18 inches at \code{dpi}) is
-used otherwise.
+\code{taxa} is \code{NULL} or \code{"ALL"}, or when \code{split_by} is
+provided. Standard resolution (12 x 18 inches at \code{dpi}) is used
+otherwise.
 
 Typical usage in an integrated model workflow:
 \preformatted{
@@ -150,14 +156,15 @@ xlabel_dict <- c(
   "numD"       = "Number of camera trap nights"
 )
 
-# Audio - birds by guild
+# Audio - all species by guild, split invertivores from other guilds
 plot_covariate_effects(
   data         = alpha_cov_aud,
   covariate    = "days",
   model_type   = "detection",
   xlabel_dict  = xlabel_dict,
   facet_var    = "guild",
-  taxa         = "Aves",
+  split_by     = "Invertivore",
+  taxa         = "ALL",
   text.size    = 9,
   tag          = "audio",
   output_dir   = config$output_figures,
@@ -165,12 +172,15 @@ plot_covariate_effects(
   dpi          = config$dpi
 )
 
-# Camera trap - all species
+# Camera trap - mammals, no split
 plot_covariate_effects(
   data         = alpha_cov_cam,
   covariate    = "numD",
   model_type   = "detection",
   xlabel_dict  = xlabel_dict,
+  facet_var    = NULL,
+  split_by     = NULL,
+  taxa         = "Mammalia",
   text.size    = 9,
   tag          = "camtrap",
   output_dir   = config$output_figures,
