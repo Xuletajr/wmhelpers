@@ -9,32 +9,41 @@ predict_detection_julian(
   julian_day,
   m_julian,
   sd_julian,
-  linear_coef = "julian_std",
-  quadratic_coef = "I(julian_std^2)",
+  linear_coef = "days",
+  quadratic_coef = "I(days^2)",
   n_pred = 100L,
-  nsamp
+  nsamp,
+  method_index = 1L
 )
 }
 \arguments{
 \item{out_bestmodel}{Fitted model object containing
-\code{alpha.comm.samples}.}
+\code{alpha.comm.samples} and \code{X.p}.}
 
-\item{julian_day}{Matrix of Julian day values (sites × surveys). Used only
-to define the prediction range (min–max).}
+\item{julian_day}{Matrix of Julian day values (sites x surveys). Used only
+to define the prediction range (min-max).}
 
 \item{m_julian}{Numeric. Mean Julian day used for centering.}
 
 \item{sd_julian}{Numeric. Standard deviation of Julian days used for scaling.}
 
-\item{linear_coef}{Character. Name of the linear Julian day coefficient in
-\code{alpha.comm.samples}. Default is \code{"julian_std"}.}
+\item{linear_coef}{Character. Name of the linear coefficient within the
+target method block. Default is \code{"days"}.}
 
-\item{quadratic_coef}{Character or \code{NULL}. Name of the quadratic term.
-Use \code{NULL} to omit. Default is \code{"I(julian_std^2)"}.}
+\item{quadratic_coef}{Character or \code{NULL}. Name of the quadratic term
+within the target method block. Use \code{NULL} to omit.
+Default is \code{"I(days^2)"}.}
 
 \item{n_pred}{Integer. Number of prediction points. Default is \code{100L}.}
 
 \item{nsamp}{Integer. Number of posterior samples to use.}
+
+\item{method_index}{Integer. Index of the detection method in the integrated
+model (1 = first method, 2 = second, etc.). Used to select the correct
+column block from \code{alpha.comm.samples} by position, avoiding
+ambiguity caused by duplicate column names across methods (e.g., two
+\code{"(Intercept)"} columns). For single-method models, the default
+\code{1L} requires no change.}
 }
 \value{
 A named list:
@@ -49,17 +58,53 @@ A named list:
 \description{
 Generates predicted detection probabilities across a sequence of Julian days
 using community-level detection coefficients (linear and optional quadratic)
-from a fitted occupancy model.
+from a fitted occupancy model. Supports both single-method and integrated
+multi-method models.
 }
 \details{
 Detection probability is computed using the inverse-logit transformation
 applied to the linear predictor:
 
-\deqn{
-logit(p) = \alpha_0 + \alpha_1 x + \alpha_2 x^2
-}
+\deqn{logit(p) = \alpha_0 + \alpha_1 x + \alpha_2 x^2}
 
 where \eqn{x} is the standardized Julian day.
+
+In integrated models, \code{alpha.comm.samples} contains one column block
+per detection method. Column names are frequently duplicated across methods
+(e.g., two \code{"(Intercept)"} columns — one per method). Indexing by name
+in such cases would silently return the wrong columns. This function selects
+the correct block by cumulative position using \code{X.p[[method_index]]}
+to determine each block's size, making name-based lookup unnecessary and
+safe.
+
+For integrated models, the recommended calls are:
+\preformatted{
+# Audio (method_index = 1)
+det_results_aud <- predict_detection_julian(
+  out_bestmodel  = out_bestmodel,
+  julian_day     = day_index_aud[, -1],
+  m_julian       = m_day_aud,
+  sd_julian      = sd_day_aud,
+  linear_coef    = "days",
+  quadratic_coef = "I(days^2)",
+  n_pred         = 100,
+  nsamp          = nsamp,
+  method_index   = 1L
+)
+
+# Camera trap (method_index = 2)
+det_results_cam <- predict_detection_julian(
+  out_bestmodel  = out_bestmodel,
+  julian_day     = day_index_cam[, -1],
+  m_julian       = m_day_cam,
+  sd_julian      = sd_day_cam,
+  linear_coef    = "numD",
+  quadratic_coef = NULL,
+  n_pred         = 100,
+  nsamp          = nsamp,
+  method_index   = 2L
+)
+}
 }
 \author{
 Thiago Bicudo
