@@ -8,6 +8,7 @@ plot_covariate_effects(
   data,
   covariate,
   model_type,
+  xlabel_dict,
   title = NULL,
   facet_var = NULL,
   taxa = NULL,
@@ -15,7 +16,6 @@ plot_covariate_effects(
   text.size,
   filename_prefix = "species",
   tag = NULL,
-  xlabel = NULL,
   output_dir = getwd(),
   project_name = "",
   dpi = 600,
@@ -43,6 +43,21 @@ not be \code{NULL} or empty.}
 whether this is a detection or occupancy model (e.g., \code{"detection"},
 \code{"occupancy"}).}
 
+\item{xlabel_dict}{A named character vector mapping covariate names to
+human-readable x-axis labels. Must be defined per project since
+covariates vary across analyses. If the covariate is not found in the
+dictionary, the raw covariate name is used as the axis label.
+
+Example:
+\preformatted{
+  xlabel_dict <- c(
+    "days"       = "Julian Day - linear term",
+    "I(days^2)"  = "Julian Day - quadratic term",
+    "numD"       = "Number of camera trap nights",
+    "canopy"     = "Canopy height (m)"
+  )
+  }}
+
 \item{title}{Character or \code{NULL}. Currently reserved for future use;
 plot titles are generated automatically from \code{taxa} and subset
 information. Defaults to \code{NULL}.}
@@ -52,11 +67,10 @@ use for faceting (e.g., \code{"guild"}, \code{"habitat"}, \code{"group"}).
 Use \code{NULL} to suppress faceting. Defaults to \code{NULL}.}
 
 \item{taxa}{Character or \code{NULL}. Taxonomic group to filter by (e.g.,
-\code{"Aves"}, \code{"Mammalia"}, \code{"Amphibia"}). Use \code{"ALL"}
-or \code{NULL} to include all species. When \code{taxa = "Aves"} and
-\code{facet_var} is \code{"guild"} or \code{"habitat"}, the data is
-automatically split into two subsets with separate plots. Defaults to
-\code{NULL}.}
+\code{"Aves"}, \code{"Mammalia"}). Use \code{"ALL"} or \code{NULL} to
+include all species. When \code{taxa = "Aves"} and \code{facet_var} is
+\code{"guild"} or \code{"habitat"}, the data is automatically split into
+two subsets with separate plots. Defaults to \code{NULL}.}
 
 \item{dodge_labels}{Logical. If \code{TRUE}, y-axis labels are staggered
 using \code{guide_axis(n.dodge = 2)} to reduce overlap. Defaults to
@@ -73,13 +87,8 @@ output filename to identify the detection method or data source
 (e.g., \code{"audio"}, \code{"camtrap"}). Useful in integrated models
 where the same covariate exists across methods. Defaults to \code{NULL}.}
 
-\item{xlabel}{Character or \code{NULL}. Custom x-axis label. If \code{NULL},
-a built-in label is looked up from a dictionary of common covariate names.
-If the covariate is not in the dictionary, the covariate name itself is
-used as the label. Defaults to \code{NULL}.}
-
-\item{output_dir}{Character. Directory where PNG files are saved. A
-trailing \code{"/"} is added if missing. Defaults to \code{getwd()}.}
+\item{output_dir}{Character. Directory where PNG files are saved. Defaults
+to \code{getwd()}.}
 
 \item{project_name}{Character. String appended to output filenames to
 identify the project. Only the first 10 characters are used. Defaults
@@ -106,7 +115,7 @@ Defaults to \code{"#0F261F"}.}
 \value{
 A list of \code{ggplot2} objects, one per subset generated. Each
 plot is also printed to the active graphics device and saved as a PNG
-file in \code{output_dir}.
+file in \code{output_dir}. The list is returned invisibly.
 }
 \description{
 Generates and saves species-level marginal effect plots for a given
@@ -128,42 +137,48 @@ split into \code{"Invertivore"} and \code{"Other_Guilds"} subsets, each
 saved as a separate PNG. The same split occurs for \code{facet_var =
 "habitat"} using \code{"Forest"} and non-forest species.
 
-High-resolution output (width 30 cm × height 55 cm at \code{2 * dpi}) is
-used when \code{taxa} is \code{NULL} or when faceting by \code{"habitat"}
-or \code{"guild"}. Standard resolution (12 × 18 inches at \code{dpi}) is
+High-resolution output (30 cm x 55 cm at \code{2 * dpi}) is used when
+\code{taxa} is \code{NULL} or when faceting by \code{"habitat"} or
+\code{"guild"}. Standard resolution (12 x 18 inches at \code{dpi}) is
 used otherwise.
 
 Typical usage in an integrated model workflow:
 \preformatted{
-# Audio — birds by guild
-plot_covariate_effects(
-  data          = alpha_cov_aud,
-  covariate     = "days",
-  model_type    = "detection",
-  facet_var     = "guild",
-  taxa          = "Aves",
-  text.size     = 9,
-  tag           = "audio",
-  output_dir    = config$output_figures,
-  project_name  = config$project_name,
-  dpi           = config$dpi
+xlabel_dict <- c(
+  "days"       = "Julian Day - linear term",
+  "I(days^2)"  = "Julian Day - quadratic term",
+  "numD"       = "Number of camera trap nights"
 )
 
-# Camera trap — mammals
+# Audio - birds by guild
 plot_covariate_effects(
-  data          = alpha_cov_cam,
-  covariate     = "numD",
-  model_type    = "detection",
-  facet_var     = NULL,
-  taxa          = "Mammalia",
-  text.size     = 9,
-  tag           = "camtrap",
-  output_dir    = config$output_figures,
-  project_name  = config$project_name,
-  dpi           = config$dpi
+  data         = alpha_cov_aud,
+  covariate    = "days",
+  model_type   = "detection",
+  xlabel_dict  = xlabel_dict,
+  facet_var    = "guild",
+  taxa         = "Aves",
+  text.size    = 9,
+  tag          = "audio",
+  output_dir   = config$output_figures,
+  project_name = config$project_name,
+  dpi          = config$dpi
+)
+
+# Camera trap - all species
+plot_covariate_effects(
+  data         = alpha_cov_cam,
+  covariate    = "numD",
+  model_type   = "detection",
+  xlabel_dict  = xlabel_dict,
+  text.size    = 9,
+  tag          = "camtrap",
+  output_dir   = config$output_figures,
+  project_name = config$project_name,
+  dpi          = config$dpi
 )
 }
 }
 \author{
-Thiago Bicudo
+Jose W. Ribeiro Jr. ("Xuleta") and Thiago Bicudo
 }

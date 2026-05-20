@@ -154,7 +154,7 @@ Functions for summarising and visualising species-level marginal effects of envi
 | Function | Description |
 |---|---|
 | `summarise_covariate_effects()` | Filter a species-level parameter table by covariate prefix and return CRI range and effect-direction summary by guild; regex-safe for covariates with special characters (e.g., `"I(days^2)"`) |
-| `plot_covariate_effects()` | Generate and export species-level marginal effect plots for a given covariate, with optional faceting by guild, habitat, or taxonomic group; supports per-method tagging for integrated models |
+| `plot_covariate_effects()` | Generate and save species-level marginal effect plots for a given covariate, with posterior mean estimates and 95% credible intervals per species coloured by effect direction; supports optional faceting by any grouping variable (guild, habitat, taxonomic group), automatic subset splitting for birds when faceting by guild or habitat, per-method tagging for integrated models via `tag`, and fully customisable colours, resolution, and x-axis labels via `xlabel_dict` |
 
 ---
 
