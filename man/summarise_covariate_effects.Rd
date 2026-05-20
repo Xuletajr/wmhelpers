@@ -4,40 +4,49 @@
 \alias{summarise_covariate_effects}
 \title{Summarise covariate marginal effects from species-level parameter estimates}
 \usage{
-summarise_covariate_effects(data, covariate)
+summarise_covariate_effects(data, covariate, group_vars = c("guild", "Effect"))
 }
 \arguments{
 \item{data}{A data frame containing species-level parameter estimates,
 typically produced by \code{build_param_table()} and joined with a
 species traits table via \code{dplyr::left_join()}. Must contain columns
-\code{param_spp_code}, \code{CRI_low}, \code{CRI_high}, \code{guild},
-and \code{Effect}.}
+\code{param_spp_code}, \code{CRI_low}, \code{CRI_high}, and \code{Effect},
+plus any columns named in \code{group_vars}.}
 
 \item{covariate}{Character. The covariate prefix to filter by. Must match
 the beginning of values in \code{param_spp_code} before the \code{"-"}
 separator (e.g., \code{"days"}, \code{"canopyHeight"}, \code{"I(days^2)"}).
 Special regex characters are escaped internally, so the string should be
 provided as it appears in the data — not as a regex pattern.}
+
+\item{group_vars}{Character vector. Column names in \code{data} to group
+by when summarising effect directions. \code{"Effect"} should always be
+included. Defaults to \code{c("guild", "Effect")}. Other useful options
+include \code{"habitat"}, \code{"habitatDensity"}, \code{"iucn"}, or any
+other trait column available in \code{data}.
+
+Examples:
+\preformatted{
+  group_vars = c("guild", "Effect")           # default
+  group_vars = c("habitat", "Effect")
+  group_vars = c("iucn", "Effect")
+  group_vars = c("guild", "habitat", "Effect")
+  }}
 }
 \value{
-A named list with three elements:
-\describe{
-\item{\code{min}}{Numeric. Minimum value of \code{CRI_low} across all
-species for the target covariate.}
-\item{\code{max}}{Numeric. Maximum value of \code{CRI_high} across all
-species for the target covariate.}
-\item{\code{summary}}{A \code{tibble} with columns \code{guild},
-\code{Effect}, and \code{n}, summarising the number of species per
-guild and effect direction.}
-}
+A named list with three elements: \code{min} (numeric, minimum
+value of \code{CRI_low} across all species for the target covariate),
+\code{max} (numeric, maximum value of \code{CRI_high}), and
+\code{summary} (a \code{tibble} with one row per combination of
+\code{group_vars} values, plus a column \code{n} with the species count).
 }
 \description{
 Filters a species-level parameter table by a given covariate prefix and
 returns the range of credible interval values and a summary of effect
-directions by guild. Designed for outputs of \code{build_param_table()}
-joined with a species traits table. For integrated multi-method models,
-pass the data for each detection method separately, as files are exported
-per method by \code{build_param_table()}.
+directions grouped by one or more trait variables. Designed for outputs of
+\code{build_param_table()} joined with a species traits table. For
+integrated multi-method models, pass the data for each detection method
+separately, as files are exported per method by \code{build_param_table()}.
 }
 \details{
 Filtering uses an anchored regex pattern (\code{"^<escaped_covariate>-"})

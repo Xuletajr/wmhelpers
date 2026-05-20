@@ -134,9 +134,7 @@
 #' )
 #' }
 #'
-#' @importFrom ggplot2 ggplot aes geom_point geom_errorbar geom_vline
-#'   scale_colour_manual scale_y_discrete labs theme_classic theme
-#'   element_text element_rect element_blank facet_grid guide_axis
+#' @importFrom ggplot2 ggplot aes geom_point geom_errorbar geom_vline scale_colour_manual scale_y_discrete labs theme_classic theme element_text element_rect element_blank facet_grid guide_axis
 #' @importFrom dplyr filter mutate
 #' @importFrom stringr str_detect str_to_sentence str_escape
 #' @importFrom scales alpha

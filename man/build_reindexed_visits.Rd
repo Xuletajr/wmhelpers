@@ -8,7 +8,7 @@ build_reindexed_visits(y)
 }
 \arguments{
 \item{y}{A 3-dimensional array of dimensions \code{[species × sites × time]},
-  where \code{NA} indicates the absence of a sampling event for a given
+where \code{NA} indicates the absence of a sampling event for a given
 species, site, and time step.}
 }
 \value{
