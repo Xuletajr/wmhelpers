@@ -6,7 +6,7 @@
 #'
 #' @param psi_stats Named list returned by \code{\link{extract_psi_stats}}.
 #'   Expected elements include matrices or data frames for:
-#'   \code{mean}, \code{sd}, \code{criL}, and \code{criU}.
+#'   \code{mean}, \code{sd}, \code{cri025}, and \code{cri975}.
 #' @param output_dir Character. Output directory. A trailing "/" is added
 #'   if missing.
 #' @param project_name Character. String appended to all filenames.
@@ -14,7 +14,7 @@
 #' @return Invisibly returns \code{NULL}. Function is called for its side effect.
 #'
 #' @description
-#' Converts occupancy probability matrices into site × species tables and
+#' Converts occupancy probability matrices into site x species tables and
 #' exports one CSV per summary statistic. Each table includes a leading
 #' \code{sites} column followed by species columns.
 #'
@@ -25,20 +25,20 @@
 #' @export
 export_psi_tables <- function(psi_stats, output_dir, project_name) {
 
-  # ── Input validation ───────────────────────────────────────────────
+  # Input validation
   stopifnot(
     "psi_stats must be a list" = is.list(psi_stats),
     "output_dir must be character" = is.character(output_dir),
     "project_name must be character" = is.character(project_name)
   )
 
-  required_names <- c("mean", "sd", "criL", "criU")
+  required_names <- c("mean", "sd", "cri025", "cri975")
 
   if (!all(required_names %in% names(psi_stats))) {
-    stop("psi_stats must contain: mean, sd, criL, criU")
+    stop("psi_stats must contain: mean, sd, cri025, cri975")
   }
 
-  # ── Ensure output directory ends with "/" ──────────────────────────
+  # Ensure output directory ends with "/"
   if (!grepl("/$", output_dir)) {
     output_dir <- paste0(output_dir, "/")
   }
@@ -47,13 +47,13 @@ export_psi_tables <- function(psi_stats, output_dir, project_name) {
     dir.create(output_dir, recursive = TRUE)
   }
 
-  # ── Helper: format and export table ────────────────────────────────
+  # Helper: format and export table
   export_one <- function(mat, stat_name) {
 
     # Convert to data.frame
     df <- as.data.frame(mat)
 
-    # Transpose: sites × species
+    # Transpose: sites x species
     df_t <- as.data.frame(t(df))
 
     # Add sites column
@@ -74,11 +74,11 @@ export_psi_tables <- function(psi_stats, output_dir, project_name) {
     utils::write.csv(df_t, file = file_name, row.names = FALSE)
   }
 
-  # ── Export all statistics ──────────────────────────────────────────
+  # Export all statistics
   export_one(psi_stats$mean, "mean")
   export_one(psi_stats$sd,   "sd")
-  export_one(psi_stats$criL, "cri025")
-  export_one(psi_stats$criU, "cri975")
+  export_one(psi_stats$cri025, "cri025")
+  export_one(psi_stats$cri975, "cri975")
 
   return(invisible(NULL))
 }

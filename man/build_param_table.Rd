@@ -7,16 +7,19 @@
 build_param_table(samples, sp_names, n_covariates, output_path = NULL)
 }
 \arguments{
-\item{samples}{Matrix of MCMC samples (e.g.
-\code{out_bestmodel$beta.samples} or
-\code{out_bestmodel$alpha.samples}).}
+\item{samples}{A matrix or \code{mcmc} object of MCMC samples (e.g.
+\code{out_bestmodel$beta.samples} or a slice of
+\code{out_bestmodel$alpha.samples} from \code{extract_method_samples()}).}
 
-\item{sp_names}{Character vector of species names in the same order as
-\code{out_bestmodel$sp.names}.}
+\item{sp_names}{Character vector of species names corresponding to the
+method being summarised. For occupancy, use \code{out_bestmodel$sp.names}.
+For detection in integrated models, use the species vector for the
+relevant method (e.g. \code{rownames(data.list$y$audio)}).}
 
-\item{n_covariates}{Integer. Number of covariates in the design matrix
+\item{n_covariates}{Integer. Total number of parameters per species in the
+design matrix, including the intercept
 (\code{ncol(out_bestmodel$X)} for beta;
-\code{ncol(out_bestmodel$X.p)} for alpha).}
+\code{ncol(out_bestmodel$X.p[[i]])} for alpha of method \code{i}).}
 
 \item{output_path}{Character. If provided, the table is exported as a CSV.
 Defaults to \code{NULL}.}
@@ -32,10 +35,33 @@ direction) for species-level MCMC samples from occupancy (beta) or detection
 (alpha) parameters.
 }
 \details{
-The first \code{length(sp_names)} rows correspond to intercepts, for which
-\code{Effect} is set to \code{""}. For covariates, \code{Effect} is classified
-as \code{"Positive"}, \code{"Negative"}, or \code{"No effect"} depending on
+For integrated multi-method models, pass the output of
+\code{extract_method_samples()} rather than the full \code{alpha.samples},
+so that \code{n_species} and \code{n_covariates} correspond to a single
+method with a uniform block structure.
+
+The first \code{length(sp_names)} columns of \code{samples} are assumed to
+correspond to intercepts, for which \code{Effect} is set to \code{""}.
+For all subsequent parameter blocks, \code{Effect} is classified as
+\code{"Positive"}, \code{"Negative"}, or \code{"No effect"} depending on
 whether the 95\\% credible interval excludes zero.
+
+The recommended workflow for integrated models is:
+\preformatted{
+# Audio
+build_param_table(
+  samples      = extract_method_samples(alpha.samples, method_spec, "audio"),
+  sp_names     = rownames(data.list$y$audio),
+  n_covariates = ncol(out_bestmodel$X.p[[1]])
+)
+
+# Camera trap
+build_param_table(
+  samples      = extract_method_samples(alpha.samples, method_spec, "camtrap"),
+  sp_names     = rownames(data.list$y$camtrap),
+  n_covariates = ncol(out_bestmodel$X.p[[2]])
+)
+}
 }
 \author{
 Thiago Bicudo

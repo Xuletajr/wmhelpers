@@ -9,7 +9,7 @@ export_psi_tables(psi_stats, output_dir, project_name)
 \arguments{
 \item{psi_stats}{Named list returned by \code{\link{extract_psi_stats}}.
 Expected elements include matrices or data frames for:
-\code{mean}, \code{sd}, \code{criL}, and \code{criU}.}
+\code{mean}, \code{sd}, \code{cri025}, and \code{cri975}.}
 
 \item{output_dir}{Character. Output directory. A trailing "/" is added
 if missing.}
@@ -20,7 +20,7 @@ if missing.}
 Invisibly returns \code{NULL}. Function is called for its side effect.
 }
 \description{
-Converts occupancy probability matrices into site × species tables and
+Converts occupancy probability matrices into site x species tables and
 exports one CSV per summary statistic. Each table includes a leading
 \code{sites} column followed by species columns.
 }
