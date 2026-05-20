@@ -109,30 +109,41 @@ Functions for MCMC diagnostics, species-level parameter summaries, and occupancy
 
 | Function | Description |
 |---|---|
-
+| `validate_rhat()` | Flag parameters with R-hat values above a convergence threshold (default: 1.1) |
+| `validate_ess()` | Flag parameters with effective sample size (ESS) below a minimum threshold (default: 450) |
+| `plot_rhat_diagnostics()` | Generate a histogram of R-hat values to visually assess MCMC convergence across parameters |
 
 #### Parameter summaries
 
 | Function | Description |
 |---|---|
-
+| `build_param_table()` | Build a tidy species-level summary table (mean, SD, 95% credible interval, effect direction) from occupancy or detection MCMC samples; supports single-method and integrated models via `extract_method_samples()` |
+| `extract_mean_prob()` | Compute posterior mean detection or occupancy probability per species from MCMC samples, with optional species-specific covariate coefficients; supports intercept-only and class/year models |
+| `extract_method_samples()` | Slice the correct columns from `alpha.samples` for a given detection method in an integrated model, using cumulative block offsets derived from `method_spec` to handle duplicate column names across methods |
 
 #### Detection prediction over time
 
 | Function | Description |
 |---|---|
-
+| `predict_detection_julian()` | Predict community-level detection probability across a sequence of Julian days using linear and optional quadratic coefficients; supports single-method and integrated models via `method_index` |
 
 #### Occupancy prediction pipeline
 
 | Function | Description |
 |---|---|
-
+| `build_occ_sequences()` | Build raw and standardized covariate sequences for occupancy prediction |
+| `compute_occupancy()` | Compute posterior occupancy probabilities across covariate sequences using community-level beta samples |
+| `build_occ_summary()` | Summarise a 3D occupancy prediction array into a tidy data frame with mean, SD, and 95% credible intervals |
+| `compute_occ_predictions()` | Wrapper pipeline: prepare sequences → predict → summarise occupancy in a single call |
 
 #### Site-level occupancy (psi)
 
 | Function | Description |
 |---|---|
+| `extract_psi_stats()` | Compute posterior summaries (mean, SD, CRI 0.025, CRI 0.975) from `psi.samples`; returns one species × sites matrix per statistic |
+| `export_psi_tables()` | Export site-level occupancy summary matrices to CSV, one file per statistic (mean, SD, CRI 0.025, CRI 0.975) |
+| `build_reindexed_visits()` | Compact a species × sites × time detection array by removing empty time steps per site, aligning visits by sampling order |
+| `build_reindexed_dates()` | Extract and reindex sampling dates from a detection array into a sites × visits matrix aligned to the visit structure of `build_reindexed_visits()` |
 
 ---
 
@@ -142,6 +153,8 @@ Functions for summarising and visualising species-level marginal effects of envi
 
 | Function | Description |
 |---|---|
+| `summarise_covariate_effects()` | Filter a species-level parameter table by covariate prefix and return CRI range and effect-direction summary by guild; regex-safe for covariates with special characters (e.g., `"I(days^2)"`) |
+| `plot_covariate_effects()` | Generate and export species-level marginal effect plots for a given covariate, with optional faceting by guild, habitat, or taxonomic group; supports per-method tagging for integrated models |
 
 ---
 
@@ -168,6 +181,7 @@ End-to-end functions for loading predictions, building spatial objects, and expo
 
 | Function | Description |
 |---|---|
+| `update_appendix_sheet()` | Join occupancy and detection probability estimates to a species appendix data frame; supports intercept-only and class/year models, and integrated models via `skip_occ = TRUE` to avoid duplicate occupancy columns |
 
 ---
 
