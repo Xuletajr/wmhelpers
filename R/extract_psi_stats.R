@@ -1,27 +1,34 @@
 #' Extract Site-Level Occupancy Probability Statistics
 #'
-#' Computes summary statistics (mean, SD, and 95\% credible intervals)
-#' for site-level occupancy probabilities from posterior samples.
-#'
-#' @param out_bestmodel Fitted model object containing
-#'   \code{psi.samples} and \code{sp.names}.
-#' @param site_names Character vector of site names used as column labels.
-#'
-#' @return Named list with four matrices:
-#' \describe{
-#'   \item{\code{mean}}{Posterior mean occupancy probabilities}
-#'   \item{\code{sd}}{Posterior standard deviation}
-#'   \item{\code{cri025}}{Lower bound of 95\% credible interval}
-#'   \item{\code{cri975}}{Upper bound of 95\% credible interval}
-#' }
-#' Each matrix has species as rows and sites as columns.
-#'
-#' @description
-#' Extracts posterior samples from the 3D array
-#' (\code{samples × species × sites}) and computes summary statistics
-#' across the MCMC dimension.
+#' Computes posterior summaries (mean, SD, and 95\% credible interval) from
+#' the \code{psi.samples} array of a fitted multi-species occupancy model.
+#' Returns one matrix per statistic, with species as rows and sites as columns.
 #'
 #' @author Thiago Bicudo
+#'
+#' @param out_bestmodel Fitted model object containing \code{psi.samples}
+#'   (a 3-dimensional array of dimensions
+#'   \code{[samples x species x sites]}) and \code{sp.names}.
+#' @param site_names Character vector of site names to use as column labels.
+#'   Must match the number of sites in \code{psi.samples} (third dimension).
+#'
+#' @return A named list with four matrices, each of dimensions
+#'   \code{[species x sites]} with species names as row names and
+#'   \code{site_names} as column names:
+#'   \code{mean} (posterior mean), \code{sd} (posterior standard deviation),
+#'   \code{cri025} (lower bound of the 95\% credible interval), and
+#'   \code{cri975} (upper bound of the 95\% credible interval).
+#'
+#' @details
+#' This function operates on \code{psi.samples}, which represents site-level
+#' occupancy probability and is shared across detection methods in integrated
+#' models. It is not affected by the block structure of \code{alpha.samples}
+#' and requires no method-specific slicing.
+#'
+#' Summary statistics are computed across the first dimension (MCMC samples)
+#' of the 3D array using \code{apply()}.
+#'
+#' @importFrom stats sd quantile
 #'
 #' @export
 extract_psi_stats <- function(out_bestmodel, site_names) {
