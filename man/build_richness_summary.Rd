@@ -51,5 +51,5 @@ is robust to different column naming conventions from \code{as_tibble()}.
 \code{\link{extract_richness}}, \code{\link{build_richness_density}}
 }
 \author{
-Jose W. Ribeiro Jr. ("Xuleta") and Thiago Bicudo
+Jose W. Ribeiro Jr. ("Xuleta")
 }

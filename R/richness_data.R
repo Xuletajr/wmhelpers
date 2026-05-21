@@ -10,7 +10,7 @@
 #' of the latent occupancy matrix (Z). Each column of the resulting matrix
 #' represents the number of species present at a given site for one MCMC sample.
 #'
-#' @author Jose W. Ribeiro Jr. ("Xuleta") and Thiago Bicudo
+#' @author Jose W. Ribeiro Jr. ("Xuleta")
 #'
 #' @param z_samples A 3-dimensional array with dimensions
 #'   \code{[MCMC x species x sites]}, typically \code{out_bestmodel$z.samples}
@@ -83,7 +83,7 @@ extract_richness <- function(z_samples,
 #' The resulting vector can be passed directly to
 #' \code{extract_richness(species_idx = ...)}.
 #'
-#' @author Jose W. Ribeiro Jr. ("Xuleta") and Thiago Bicudo
+#' @author Jose W. Ribeiro Jr. ("Xuleta")
 #'
 #' @param sp_names Character vector of species names in model order, typically
 #'   \code{out_bestmodel$sp.names}.
@@ -173,7 +173,7 @@ get_species_idx <- function(sp_names,
 #' (mean, SD, median, and credible intervals) per site and optional grouping
 #' variables.
 #'
-#' @author Jose W. Ribeiro Jr. ("Xuleta") and Thiago Bicudo
+#' @author Jose W. Ribeiro Jr. ("Xuleta")
 #'
 #' @param richness_matrix A \code{[sites x MCMC]} numeric matrix, output from
 #'   \code{extract_richness()}.
@@ -260,7 +260,7 @@ build_richness_summary <- function(richness_matrix,
 #' metadata, producing a long-format tibble suitable for ridgeline or density
 #' plots.
 #'
-#' @author Jose W. Ribeiro Jr. ("Xuleta") and Thiago Bicudo
+#' @author Jose W. Ribeiro Jr. ("Xuleta")
 #'
 #' @param richness_matrix A \code{[sites x MCMC]} numeric matrix, output from
 #'   \code{extract_richness()}.
@@ -357,7 +357,7 @@ build_richness_density <- function(richness_matrix,
 #' dimensions, resolution, and background settings. Standardizes figure
 #' saving across analyses.
 #'
-#' @author Jose W. Ribeiro Jr. ("Xuleta") and Thiago Bicudo
+#' @author Jose W. Ribeiro Jr. ("Xuleta")
 #'
 #' @param plot_object A \code{ggplot} object to be saved.
 #' @param filename Character. Name of the output file including extension

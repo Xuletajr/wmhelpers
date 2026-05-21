@@ -39,5 +39,5 @@ group-specific analyses.
 \code{\link{get_species_idx}}, \code{\link{build_richness_summary}}
 }
 \author{
-Jose W. Ribeiro Jr. ("Xuleta") and Thiago Bicudo
+Jose W. Ribeiro Jr. ("Xuleta")
 }

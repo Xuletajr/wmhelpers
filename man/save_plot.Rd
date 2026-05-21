@@ -44,5 +44,5 @@ saving across analyses.
 \code{\link[ggplot2]{ggsave}}
 }
 \author{
-Jose W. Ribeiro Jr. ("Xuleta") and Thiago Bicudo
+Jose W. Ribeiro Jr. ("Xuleta")
 }

@@ -59,5 +59,5 @@ richness_frugivores <- extract_richness(
 \code{\link{extract_richness}}
 }
 \author{
-Jose W. Ribeiro Jr. ("Xuleta") and Thiago Bicudo
+Jose W. Ribeiro Jr. ("Xuleta")
 }

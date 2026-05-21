@@ -59,5 +59,5 @@ in this region?" rather than the distribution of individual sites.
 \code{\link{extract_richness}}, \code{\link{plot_richness_ridgeline}}
 }
 \author{
-Jose W. Ribeiro Jr. ("Xuleta") and Thiago Bicudo
+Jose W. Ribeiro Jr. ("Xuleta")
 }
