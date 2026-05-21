@@ -88,17 +88,6 @@ Functions are organized by module. All exported functions are documented and acc
 | `plot_bar_species()` | Generate standardized bar plots for species detection frequency and richness summaries |
 	
 
-
----
-
-### 🌐 GBIF occurrence download
-
-Functions to query, match, and download species occurrence data from the [GBIF](https://www.gbif.org) database.
-
-| Function | Description |
-|---|---|
-
-
 ---
 
 ### 🦉 MSOM — General inference and diagnostics (`msom_general.R`)
@@ -158,6 +147,45 @@ Functions for summarising and visualising species-level marginal effects of envi
 
 ---
 
+### 🔢 MSOM — Species richness from latent occupancy states (`richness_data.R`)
+
+Functions for extracting and summarising site-level species richness from posterior Z-matrix samples.
+
+| Function | Description |
+|---|---|
+| `extract_richness()` | Compute site-level species richness estimates from posterior Z-matrix samples (`[MCMC x species x sites]`); supports species subsetting via `species_idx` for guild- or group-specific richness |
+| `get_species_idx()` | Translate a trait-table filter into integer species indices aligned with the model species order; output passed directly to `extract_richness(species_idx = ...)` |
+| `build_richness_summary()` | Merge site-level richness estimates with site metadata and compute posterior summaries (mean, SD, median, CRI 0.025, CRI 0.975, Q05, Q95) per site and optional grouping variables |
+| `build_richness_density()` | Produce long-format richness data retaining all MCMC samples for ridgeline or density plots; supports site-level (`aggregate = FALSE`) or group-mean (`aggregate = TRUE`) modes |
+| `save_plot()` | Save a ggplot object with consistent dimensions, resolution, and background settings; fully parameterised — no dependency on global config objects |
+
+---
+
+### 📊 MSOM — Richness visualization (`richness_plots.R`)
+
+Functions for plotting species richness across categorical and continuous gradients.
+
+| Function | Description |
+|---|---|
+| `plot_richness_categorical()` | Jittered dot plot of site-level richness grouped by a categorical variable (e.g., region, habitat), with a mean ± SD pointrange overlay per group |
+| `plot_richness_ridgeline()` | Ridgeline density plot of posterior richness samples grouped by a categorical variable; groups ordered by median richness; palette interpolated automatically from user-supplied colors |
+| `plot_richness_continuous()` | Scatter plot of mean site richness against a continuous environmental covariate with optional smoothing trend line (`lm`, `loess`, or `gam`) and color grouping |
+
+---
+
+### 🔀 MSOM — Jaccard similarity (`jaccard.R`)
+
+Functions for computing and visualising pairwise species composition similarity across sites or regions.
+
+| Function | Description |
+|---|---|
+| `compute_jaccard()` | Compute pairwise Jaccard similarity across all MCMC samples from posterior Z-matrix samples; supports site-level or group-level aggregation (species present in a group if detected in any site within that group); returns per-sample matrix, posterior summary tibble, and square mean matrix |
+| `plot_jaccard_heatmap()` | Tile heatmap of any posterior Jaccard summary statistic (mean, median, SD, CRI, CI width, CV) with flexible diagonal treatment and automatic color scale adjustment by statistic type |
+| `summarise_jaccard_groups()` | Classify site pairs from site-level Jaccard output as within- or between-group; removes self-comparisons and duplicate pairs; supports conversion to dissimilarity (`1 - J`) |
+| `plot_jaccard_groups()` | Dot plot of within- vs between-group Jaccard similarity or dissimilarity, with individual site pairs as background points and posterior mean ± 95% CI per group combination; supports focal group filtering for single-region panels |
+
+---
+
 ### 🗺️ MSOM — Spatial prediction (`msom_predict.R`)
 
 Functions for preparing covariates, reprojecting coordinates, and running large-scale spatial occupancy predictions on H3 hexagonal grids.
@@ -182,6 +210,16 @@ End-to-end functions for loading predictions, building spatial objects, and expo
 | Function | Description |
 |---|---|
 | `update_appendix_sheet()` | Join occupancy and detection probability estimates to a species appendix data frame; supports intercept-only and class/year models, and integrated models via `skip_occ = TRUE` to avoid duplicate occupancy columns |
+
+
+---
+
+### 🌐 GBIF occurrence download
+
+Functions to query, match, and download species occurrence data from the [GBIF](https://www.gbif.org) database.
+
+| Function | Description |
+|---|---|
 
 ---
 
