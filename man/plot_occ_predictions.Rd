@@ -12,42 +12,76 @@ plot_occ_predictions(
   color_text = "#1B3A5C",
   color_strip_bg = "#E8EEF4",
   ribbon_alpha = 0.55,
+  x_size = 12,
+  y_size = 12,
+  title_size = 13,
+  legend_title_size = 12,
+  legend_text_size = 11,
   strip_class_prefix = ""
 )
 }
 \arguments{
 \item{pred_occ_df}{Tidy data frame returned by
 \code{\link{summarise_occ_predictions}}. Must include columns:
-\code{variable}, \code{value}, \code{mean}, \code{criL},
-\code{criU}, and optionally \code{year} and \code{class}.}
+\code{variable}, \code{expanded_variable}, \code{seq_data},
+\code{mean}, \code{ciL}, \code{ciU}, and optionally
+\code{year} and \code{class}.}
 
 \item{type_levels}{Optional character vector of class/type levels
 (e.g. habitat types). Defaults to \code{NULL}.}
 
-\item{color_ribbon}{Character. Ribbon fill colour.}
+\item{color_ribbon}{Character. Ribbon fill colour.
+Defaults to \code{"#CCCCCC"}.}
 
-\item{color_line}{Character. Line colour.}
+\item{color_line}{Character. Line colour.
+Defaults to \code{"#1B3A5C"}.}
 
-\item{color_text}{Character. Text/axis colour.}
+\item{color_text}{Character. Text/axis colour.
+Defaults to \code{"#1B3A5C"}.}
 
-\item{color_strip_bg}{Character. Facet strip background colour.}
+\item{color_strip_bg}{Character. Facet strip background colour.
+Defaults to \code{"#E8EEF4"}.}
 
 \item{ribbon_alpha}{Numeric. Transparency of ribbon.
 Defaults to \code{0.55}.}
 
-\item{strip_class_prefix}{Character string to remove from class labels.}
+\item{x_size}{Numeric. Font size for x-axis text and title.
+Defaults to \code{12}.}
+
+\item{y_size}{Numeric. Font size for y-axis text and title.
+Defaults to \code{12}.}
+
+\item{title_size}{Numeric. Font size for the plot title.
+Defaults to \code{13}.}
+
+\item{legend_title_size}{Numeric. Font size for legend title text.
+Defaults to \code{12}.}
+
+\item{legend_text_size}{Numeric. Font size for legend key labels.
+Defaults to \code{11}.}
+
+\item{strip_class_prefix}{Character string to remove from class labels.
+Defaults to \code{""}.}
 }
 \value{
-Named list of \code{ggplot} objects.
+Named list of \code{ggplot} objects. Plot names are built from
+non-NA grouping keys (e.g. \code{"scosa"} for single-period models,
+\code{"scosa_2023"} for multi-year models).
 }
 \description{
 Generates smooth occupancy response curves with credible intervals for
 each predictor. Supports optional faceting by year and class.
+Column names are aligned with the output of
+\code{\link{summarise_occ_predictions}}: x-axis uses \code{seq_data}
+and credible interval bounds use \code{ciL}/\code{ciU}.
+
+When \code{year} or \code{class} are \code{NA} (e.g. single-period
+models), they are automatically suppressed from plot titles and filenames.
 }
 \details{
 Produces a named list of \code{ggplot2} objects showing occupancy
 probability responses across predictor gradients. Each plot corresponds
-to a combination of variable × year × (optionally) class.
+to a combination of variable \eqn{\times} year \eqn{\times} (optionally) class.
 }
 \author{
 Thiago Bicudo
