@@ -98,9 +98,10 @@ Functions for MCMC diagnostics, species-level parameter summaries, and occupancy
 
 | Function | Description |
 |---|---|
-| `validate_rhat()` | Flag parameters with R-hat values above a convergence threshold (default: 1.1) |
-| `validate_ess()` | Flag parameters with effective sample size (ESS) below a minimum threshold (default: 450) |
-| `plot_rhat_diagnostics()` | Generate a histogram of R-hat values to visually assess MCMC convergence across parameters |
+| `check_rhat()` | Flag parameters with R-hat values above a convergence threshold (default: 1.1) and export a summary table of problematic parameters |
+| `check_ess()` | Flag parameters with effective sample size (ESS) below a minimum threshold (default: 450) and optionally export a CSV of problematic parameters |
+| `plot_mcmc_diagnostic()` | Generate a faceted histogram of any MCMC diagnostic metric (R-hat, ESS) across parameter groups (occupancy, detection) to visually assess chain convergence and mixing |
+| `get_significant_vars()` | Identify community-level occupancy variables whose 95% credible interval excludes zero; used to select predictors for visualization and prediction pipelines |
 
 #### Parameter summaries
 
@@ -201,6 +202,7 @@ End-to-end functions for loading predictions, building spatial objects, and expo
 
 | Function | Description |
 |---|---|
+| `plot_occupancy_map()` | Generate and save a spatial map of predicted occupancy probability (median posterior) for a single species on an H3 hexagonal grid, with presence points overlaid; supports batch production runs via species index loop and flexible color and size parameters |
 
 
 ---
