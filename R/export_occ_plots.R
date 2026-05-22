@@ -8,6 +8,9 @@
 #' @param output_dir Character. Directory where plots will be saved.
 #'   A trailing "/" will be added if missing.
 #' @param project_name Character. String appended to all output filenames.
+#' @param tag Optional character string inserted into all filenames before
+#'   \code{.png} (e.g. \code{"audio"}, \code{"birds"}, \code{"amphibians"}).
+#'   Defaults to \code{NULL} (no tag added).
 #' @param type_levels Optional character vector (used only for filename tagging).
 #' @param selected_vars Optional character vector of variables to include in
 #'   the multiplot. If \code{NULL}, all plots are used.
@@ -21,6 +24,9 @@
 #' Exports all plots in \code{plot_list} as individual PNG files and optionally
 #' creates a combined multiplot using \code{patchwork}.
 #'
+#' File naming convention:
+#' \code{occ_<variable>[_<type_tag>][_<tag>]_<project_name>.png}
+#'
 #' @author Thiago Bicudo
 #'
 #' @importFrom ggplot2 ggsave
@@ -31,6 +37,7 @@ export_occ_plots <- function(
     plot_list,
     output_dir,
     project_name,
+    tag = NULL,
     type_levels = NULL,
     selected_vars = NULL,
     width_single = 24,
@@ -42,80 +49,81 @@ export_occ_plots <- function(
 
   # ── Input validation ───────────────────────────────────────────────
   stopifnot(
-    "plot_list must be a list" = is.list(plot_list),
-    "output_dir must be character" = is.character(output_dir),
-    "project_name must be character" = is.character(project_name)
+    "plot_list must be a list"         = is.list(plot_list),
+    "output_dir must be character"     = is.character(output_dir),
+    "project_name must be character"   = is.character(project_name)
   )
+
+  if (!is.null(tag)) {
+    stopifnot("tag must be a single character string" =
+                is.character(tag) && length(tag) == 1)
+  }
 
   # ── Ensure output directory ends with "/" ──────────────────────────
   if (!grepl("/$", output_dir)) {
     output_dir <- paste0(output_dir, "/")
   }
 
-  # Create directory if it doesn't exist
   if (!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)
   }
 
-  # ── Optional tag for filenames ─────────────────────────────────────
-  type_tag <- ""
-  if (!is.null(type_levels)) {
-    type_tag <- paste0("_", paste(type_levels, collapse = "_"))
+  # ── Build filename suffixes ────────────────────────────────────────
+  type_tag <- if (!is.null(type_levels)) {
+    paste0("_", paste(type_levels, collapse = "_"))
+  } else {
+    ""
   }
+
+  custom_tag <- if (!is.null(tag)) paste0("_", tag) else ""
 
   # ── Save individual plots ──────────────────────────────────────────
   for (nm in names(plot_list)) {
 
     file_name <- paste0(
       output_dir,
-      "occ_", nm, type_tag, "_", project_name, ".png"
+      "occ_", nm, type_tag, custom_tag, "_", project_name, ".png"
     )
 
     ggplot2::ggsave(
       filename = file_name,
-      plot = plot_list[[nm]],
-      width = width_single,
-      height = height_single,
-      units = "cm",
-      dpi = dpi
+      plot     = plot_list[[nm]],
+      width    = width_single,
+      height   = height_single,
+      units    = "cm",
+      dpi      = dpi
     )
   }
 
   # ── Build multiplot (optional) ─────────────────────────────────────
   multi_plot <- NULL
 
-  if (!is.null(selected_vars)) {
-
-    # Filter plots by selected variable names
-    selected_plots <- plot_list[
+  selected_plots <- if (!is.null(selected_vars)) {
+    plot_list[
       sapply(names(plot_list), function(nm) {
         any(grepl(paste(selected_vars, collapse = "|"), nm))
       })
     ]
-
   } else {
-    selected_plots <- plot_list
+    plot_list
   }
 
-  # Only build multiplot if more than one plot
   if (length(selected_plots) > 1) {
 
     multi_plot <- patchwork::wrap_plots(selected_plots)
 
     multi_name <- paste0(
       output_dir,
-      "occ_MULTIPLOT",
-      type_tag, "_",
-      project_name, ".png"
+      "occ_MULTIPLOT", type_tag, custom_tag, "_", project_name, ".png"
     )
 
     ggplot2::ggsave(
       filename = multi_name,
-      plot = multi_plot,
-      width = width_multi,
-      height = height_multi,
-      units = "cm",
-      dpi = dpi
+      plot     = multi_plot,
+      width    = width_multi,
+      height   = height_multi,
+      units    = "cm",
+      dpi      = dpi
     )
   }
 

@@ -8,6 +8,7 @@ export_occ_plots(
   plot_list,
   output_dir,
   project_name,
+  tag = NULL,
   type_levels = NULL,
   selected_vars = NULL,
   width_single = 24,
@@ -26,6 +27,10 @@ A trailing "/" will be added if missing.}
 
 \item{project_name}{Character. String appended to all output filenames.}
 
+\item{tag}{Optional character string inserted into all filenames before
+\code{.png} (e.g. \code{"audio"}, \code{"birds"}, \code{"amphibians"}).
+Defaults to \code{NULL} (no tag added).}
+
 \item{type_levels}{Optional character vector (used only for filename tagging).}
 
 \item{selected_vars}{Optional character vector of variables to include in
@@ -43,6 +48,9 @@ Invisibly returns the multiplot object (if created), otherwise \code{NULL}.
 \description{
 Exports all plots in \code{plot_list} as individual PNG files and optionally
 creates a combined multiplot using \code{patchwork}.
+
+File naming convention:
+\code{occ_<variable>[_<type_tag>][_<tag>]_<project_name>.png}
 }
 \details{
 Saves individual PNG files for each occupancy prediction plot and
