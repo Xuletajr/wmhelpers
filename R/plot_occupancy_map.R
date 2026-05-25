@@ -86,7 +86,7 @@
 #' @importFrom ggspatial annotation_north_arrow annotation_scale north_arrow_fancy_orienteering
 #'
 #' @export
-plot_predictions <- function(sp,
+plot_occupancy_map <- function(sp,
                              psi_pred_quantiles,
                              hexdat,
                              points,
