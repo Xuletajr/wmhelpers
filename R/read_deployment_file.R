@@ -150,6 +150,10 @@ read_deployment_file <- function(path,
     dplyr::mutate(
       method     = method,
       point_name = paste0(sites, "_", method)
+    ) %>%
+    dplyr::select(
+      sites, point_name, longitude, latitude,
+      start_date, end_date, method
     )
 
   if (!is.null(valid_sites)) {
