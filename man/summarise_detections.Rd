@@ -66,6 +66,11 @@ This function does not apply any filtering internally — all subsetting
 
 Species present in \code{detections_df} but absent from \code{spp_list}
 will have \code{NA} in \code{common_name} and \code{iucn_code}.
+
+The IUCN column is always renamed to \code{"iucn_code"} in the output,
+regardless of the value passed to \code{iucn_col}. This ensures consistent
+column naming for downstream functions such as
+\code{\link{plot_detection_summary}} and \code{\link{export_detection_plots}}.
 }
 \examples{
 \dontrun{

@@ -54,6 +54,11 @@
 #' Species present in \code{detections_df} but absent from \code{spp_list}
 #' will have \code{NA} in \code{common_name} and \code{iucn_code}.
 #'
+#' The IUCN column is always renamed to \code{"iucn_code"} in the output,
+#' regardless of the value passed to \code{iucn_col}. This ensures consistent
+#' column naming for downstream functions such as
+#' \code{\link{plot_detection_summary}} and \code{\link{export_detection_plots}}.
+#'
 #' @examples
 #' \dontrun{
 #' # Overall by species only
@@ -71,8 +76,7 @@
 #' @seealso \code{\link{plot_detection_summary}},
 #'   \code{\link{export_detection_plots}}
 #'
-#' @importFrom dplyr left_join select group_by summarise n n_distinct across
-#'   all_of rename
+#' @importFrom dplyr left_join select group_by summarise n n_distinct across all_of rename
 #'
 #' @export
 summarise_detections <- function(detections_df,
@@ -130,7 +134,7 @@ summarise_detections <- function(detections_df,
     dplyr::rename(
       species     = !!species_col,
       common_name = !!common_name_col,
-      iucn_code   = !!iucn_col
+      iucn_code   = !!iucn_col        # always standardized to "iucn_code"
     )
 }
 
@@ -225,8 +229,7 @@ plot_detection_summary <- function(det_summary,
 #' High-level pipeline function that iterates over a list of filter
 #' specifications, applies each filter to the detection data, calls
 #' \code{\link{summarise_detections}} and \code{\link{plot_detection_summary}},
-#' assembles a two-panel figure with \code{ggpubr::ggarrange()}, and exports
-#' it as a PNG file.
+#' and exports each plot as a separate PNG file.
 #'
 #' @author Jose W. Ribeiro Jr. ("Xuleta")
 #'
@@ -240,23 +243,9 @@ plot_detection_summary <- function(det_summary,
 #'   list with two elements:
 #'   \describe{
 #'     \item{\code{filters}}{A named list of column-value pairs used to filter
-#'       \code{detections} before summarising. For example,
-#'       \code{list(method = "audio", season = "Wet")} filters rows where
-#'       \code{method == "audio"} AND \code{season == "Wet"}. Use \code{NULL}
-#'       or an empty list for no filtering (overall summary).}
+#'       \code{detections} before summarising. Use \code{NULL} for no filtering.}
 #'     \item{\code{label}}{Character. A short descriptor used in the subtitle
 #'       and output filename (e.g., \code{"audio_wet"}).}
-#'   }
-#'
-#'   Example:
-#'   \preformatted{
-#'   plot_specs <- list(
-#'     list(filters = list(method = "audio"),                 label = "audio_overall"),
-#'     list(filters = list(method = "audio", season = "Wet"), label = "audio_wet"),
-#'     list(filters = list(method = "camera", community = "Aishalton"),
-#'          label = "camera_aishalton"),
-#'     list(filters = NULL,                                   label = "all_overall")
-#'   )
 #'   }
 #' @param output_path Character. Directory where PNG files are saved.
 #' @param project_name Character. Appended to output filenames.
@@ -266,7 +255,7 @@ plot_detection_summary <- function(det_summary,
 #' @param color_sites Character. Bar fill color for sites plot.
 #'   Defaults to \code{"#008AA1"}.
 #' @param top_n Integer. Number of top species per plot. Defaults to \code{10}.
-#' @param width Numeric. Output image width in cm. Defaults to \code{28}.
+#' @param width Numeric. Output image width in cm. Defaults to \code{18}.
 #' @param height Numeric. Output image height in cm. Defaults to \code{16}.
 #' @param species_col Character. Species column name. Defaults to
 #'   \code{"species"}.
@@ -279,8 +268,11 @@ plot_detection_summary <- function(det_summary,
 #'   writing PNG files to \code{output_path}.
 #'
 #' @details
-#' Output filenames follow the pattern:
-#' \code{species_detection_<label>_<project_name>.png}
+#' Each spec produces two separate PNG files:
+#' \itemize{
+#'   \item \code{species_detection_det_<label>_<project_name>.png}
+#'   \item \code{species_detection_sites_<label>_<project_name>.png}
+#' }
 #'
 #' If a filter combination results in zero rows, the iteration is skipped
 #' with a warning and processing continues with the next specification.
@@ -290,7 +282,6 @@ plot_detection_summary <- function(det_summary,
 #'
 #' @importFrom purrr walk
 #' @importFrom grDevices png dev.off
-#' @importFrom ggpubr ggarrange
 #'
 #' @export
 export_detection_plots <- function(detections,
@@ -302,7 +293,7 @@ export_detection_plots <- function(detections,
                                    color_det       = "#D99E73",
                                    color_sites     = "#008AA1",
                                    top_n           = 10,
-                                   width           = 28,
+                                   width           = 18,
                                    height          = 16,
                                    species_col     = "species",
                                    common_name_col = "common_name",
@@ -370,29 +361,30 @@ export_detection_plots <- function(detections,
       color_det   = color_det,
       color_sites = color_sites,
       subtitle    = spec$label,
-      status_col  = iucn_col
+      status_col  = "iucn_code"  # always standardized by summarise_detections
     )
 
-    # ── Export panel ───────────────────────────────────────────────────────────
-    out_file <- paste0(
+    # ── Export detections plot ─────────────────────────────────────────────────
+    out_det <- paste0(
       output_path,
-      "species_detection_", spec$label, "_", project_name, ".png"
+      "species_detection_det_", spec$label, "_", project_name, ".png"
     )
-
-    grDevices::png(
-      filename = out_file,
-      width    = width,
-      height   = height,
-      units    = "cm",
-      bg       = "white",
-      res      = dpi
-    )
-
-    print(ggpubr::ggarrange(plots$detections, plots$sites))
-
+    grDevices::png(filename = out_det, width = width, height = height,
+                   units = "cm", bg = "white", res = dpi)
+    print(plots$detections)
     grDevices::dev.off()
+    message("Exported: ", basename(out_det))
 
-    message("Exported: ", basename(out_file))
+    # ── Export sites plot ──────────────────────────────────────────────────────
+    out_sites <- paste0(
+      output_path,
+      "species_detection_sites_", spec$label, "_", project_name, ".png"
+    )
+    grDevices::png(filename = out_sites, width = width, height = height,
+                   units = "cm", bg = "white", res = dpi)
+    print(plots$sites)
+    grDevices::dev.off()
+    message("Exported: ", basename(out_sites))
   })
 
   invisible(NULL)

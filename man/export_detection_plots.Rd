@@ -14,7 +14,7 @@ export_detection_plots(
   color_det = "#D99E73",
   color_sites = "#008AA1",
   top_n = 10,
-  width = 28,
+  width = 18,
   height = 16,
   species_col = "species",
   common_name_col = "common_name",
@@ -34,24 +34,10 @@ export_detection_plots(
 list with two elements:
 \describe{
 \item{\code{filters}}{A named list of column-value pairs used to filter
-\code{detections} before summarising. For example,
-\code{list(method = "audio", season = "Wet")} filters rows where
-\code{method == "audio"} AND \code{season == "Wet"}. Use \code{NULL}
-or an empty list for no filtering (overall summary).}
+\code{detections} before summarising. Use \code{NULL} for no filtering.}
 \item{\code{label}}{Character. A short descriptor used in the subtitle
 and output filename (e.g., \code{"audio_wet"}).}
-}
-
-Example:
-\preformatted{
-  plot_specs <- list(
-    list(filters = list(method = "audio"),                 label = "audio_overall"),
-    list(filters = list(method = "audio", season = "Wet"), label = "audio_wet"),
-    list(filters = list(method = "camera", community = "Aishalton"),
-         label = "camera_aishalton"),
-    list(filters = NULL,                                   label = "all_overall")
-  )
-  }}
+}}
 
 \item{output_path}{Character. Directory where PNG files are saved.}
 
@@ -67,7 +53,7 @@ Defaults to \code{"#008AA1"}.}
 
 \item{top_n}{Integer. Number of top species per plot. Defaults to \code{10}.}
 
-\item{width}{Numeric. Output image width in cm. Defaults to \code{28}.}
+\item{width}{Numeric. Output image width in cm. Defaults to \code{18}.}
 
 \item{height}{Numeric. Output image height in cm. Defaults to \code{16}.}
 
@@ -88,12 +74,14 @@ writing PNG files to \code{output_path}.
 High-level pipeline function that iterates over a list of filter
 specifications, applies each filter to the detection data, calls
 \code{\link{summarise_detections}} and \code{\link{plot_detection_summary}},
-assembles a two-panel figure with \code{ggpubr::ggarrange()}, and exports
-it as a PNG file.
+and exports each plot as a separate PNG file.
 }
 \details{
-Output filenames follow the pattern:
-\code{species_detection_<label>_<project_name>.png}
+Each spec produces two separate PNG files:
+\itemize{
+\item \code{species_detection_det_<label>_<project_name>.png}
+\item \code{species_detection_sites_<label>_<project_name>.png}
+}
 
 If a filter combination results in zero rows, the iteration is skipped
 with a warning and processing continues with the next specification.
