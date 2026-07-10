@@ -2,8 +2,7 @@
 # Detection summary, visualization and export functions
 # File: R/detection_summary.R
 # =============================================================================
-
-
+#'
 #' Summarise Species Detections
 #'
 #' Groups a detection data frame by species (and optional grouping variables)
