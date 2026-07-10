@@ -5,7 +5,9 @@
 #'
 #' The function supports filtering to the top or bottom N species,
 #' automatic formatting of scientific names (italic), and conservation
-#' status labeling following WildMon standards.
+#' status labeling following WildMon standards. Full IUCN category names
+#' are automatically converted to standard codes (e.g., "Least Concern"
+#' to "LC").
 #'
 #' @param dat A data frame containing species-level summaries.
 #' @param value Character string. Name of the numeric column used as the
@@ -13,12 +15,13 @@
 #' @param species Character string. Name of the column containing species
 #'   names (e.g., `"Species"` or `"Common_name"`).
 #' @param status Optional character string. Name of the column containing
-#'   conservation status (e.g., `"IUCN"`). If provided, `"LC"` values
-#'   are not displayed in the plot.
+#'   conservation status (e.g., `"iucn_code"`). If provided, species with
+#'   status matching `status_ref` are not labeled. Full IUCN category names
+#'   are automatically converted to standard codes.
 #' @param flag Optional character string. Name of a binary column used to
 #'   highlight species of special interest (e.g., `"SGCN"`).
-#' @param status_ref Character string. Reference status category that will
-#'   not be displayed (default = `"LC"`).
+#' @param status_ref Character vector. Status category or categories that
+#'   will not be displayed as labels (default = `c("LC", "NE")`).
 #' @param flag_value Character string. Value in `flag` column used to
 #'   activate the flag symbol (default = `"Yes"`).
 #' @param flag_symbol Character string. Symbol appended to conservation
@@ -38,9 +41,10 @@
 #' If `species = "Common_name"`, names are displayed in plain text.
 #'
 #' Conservation labeling follows this logic:
-#' - Species with status equal to `status_ref` (default `"LC"`)
-#'   are not labeled unless flagged.
-#' - Species with a different status are labeled with their category.
+#' - Full IUCN category names are automatically recoded to standard
+#'   abbreviations (CR, EN, VU, NT, LC, DD, NE).
+#' - Species with status matching any value in `status_ref` are not labeled.
+#' - Species with a different status are labeled with their category code.
 #' - If `flag` is provided and equals `flag_value`, the `flag_symbol`
 #'   is appended to the label.
 #'
@@ -55,7 +59,7 @@ plot_bar_species <- function(
     species,
     status = NULL,
     flag = NULL,
-    status_ref = "LC",
+    status_ref = c("LC", "NE"),
     flag_value = "Yes",
     flag_symbol = "*",
     top_n = NULL,
@@ -66,7 +70,7 @@ plot_bar_species <- function(
     breaks_x = NULL
 ) {
 
-  # Select top or bottom N species
+  # ── Select top or bottom N species ───────────────────────────────────────────
   if (!is.null(top_n)) {
     if (bottom) {
       dat <- dat |>
@@ -79,23 +83,40 @@ plot_bar_species <- function(
     }
   }
 
-  # Build conservation label
+  # ── Recode full IUCN names to standard codes ─────────────────────────────────
+  iucn_recode <- c(
+    "Critically Endangered" = "CR",
+    "Endangered"            = "EN",
+    "Vulnerable"            = "VU",
+    "Near Threatened"       = "NT",
+    "Least Concern"         = "LC",
+    "Data Deficient"        = "DD",
+    "Not Evaluated"         = "NE"
+  )
+
+  if (!is.null(status) && status %in% names(dat)) {
+    if (any(dat[[status]] %in% names(iucn_recode), na.rm = TRUE)) {
+      dat[[status]] <- dplyr::recode(dat[[status]], !!!iucn_recode)
+    }
+  }
+
+  # ── Build conservation label ──────────────────────────────────────────────────
   if (!is.null(status)) {
 
     if (!is.null(flag)) {
 
       dat$label <- dplyr::case_when(
-        dat[[status]] == status_ref & dat[[flag]] == flag_value ~ flag_symbol,
-        dat[[status]] != status_ref & dat[[flag]] == flag_value ~
+        dat[[status]] %in% status_ref & dat[[flag]] == flag_value ~ flag_symbol,
+        !dat[[status]] %in% status_ref & dat[[flag]] == flag_value ~
           paste0(dat[[status]], flag_symbol),
-        dat[[status]] != status_ref ~ dat[[status]],
+        !dat[[status]] %in% status_ref ~ dat[[status]],
         TRUE ~ ""
       )
 
     } else {
 
       dat$label <- ifelse(
-        dat[[status]] == status_ref,
+        dat[[status]] %in% status_ref,
         "",
         dat[[status]]
       )
@@ -105,9 +126,10 @@ plot_bar_species <- function(
     dat$label <- ""
   }
 
-  # Determine italic formatting for scientific names
+  # ── Determine italic formatting for scientific names ──────────────────────────
   use_italic <- species == "Species"
 
+  # ── Build plot ────────────────────────────────────────────────────────────────
   p <- ggplot2::ggplot(
     dat,
     ggplot2::aes(
@@ -119,16 +141,16 @@ plot_bar_species <- function(
     ggplot2::geom_text(
       ggplot2::aes(label = label),
       hjust = -0.2,
-      size = 4
+      size  = 4
     ) +
     ggplot2::labs(
-      x = xlab,
-      y = NULL,
+      x        = xlab,
+      y        = NULL,
       subtitle = subtitle
     ) +
     ggplot2::theme_bw() +
     ggplot2::theme(
-      axis.text.y = ggplot2::element_text(
+      axis.text.y     = ggplot2::element_text(
         face = ifelse(use_italic, "italic", "plain")
       ),
       legend.position = "none"
@@ -138,7 +160,7 @@ plot_bar_species <- function(
     p <- p +
       ggplot2::scale_x_continuous(
         n.breaks = breaks_x,
-        labels = scales::label_number(accuracy = 1)
+        labels   = scales::label_number(accuracy = 1)
       )
   } else {
     p <- p +

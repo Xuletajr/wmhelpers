@@ -10,7 +10,7 @@ plot_bar_species(
   species,
   status = NULL,
   flag = NULL,
-  status_ref = "LC",
+  status_ref = c("LC", "NE"),
   flag_value = "Yes",
   flag_symbol = "*",
   top_n = NULL,
@@ -31,14 +31,15 @@ frequency metric (e.g., \code{"N_detections"} or \code{"N_sites"}).}
 names (e.g., \code{"Species"} or \code{"Common_name"}).}
 
 \item{status}{Optional character string. Name of the column containing
-conservation status (e.g., \code{"IUCN"}). If provided, \code{"LC"} values
-are not displayed in the plot.}
+conservation status (e.g., \code{"iucn_code"}). If provided, species with
+status matching \code{status_ref} are not labeled. Full IUCN category names
+are automatically converted to standard codes.}
 
 \item{flag}{Optional character string. Name of a binary column used to
 highlight species of special interest (e.g., \code{"SGCN"}).}
 
-\item{status_ref}{Character string. Reference status category that will
-not be displayed (default = \code{"LC"}).}
+\item{status_ref}{Character vector. Status category or categories that
+will not be displayed as labels (default = \code{c("LC", "NE")}).}
 
 \item{flag_value}{Character string. Value in \code{flag} column used to
 activate the flag symbol (default = \code{"Yes"}).}
@@ -71,16 +72,19 @@ frequencies (e.g., number of detections or number of sites).
 \details{
 The function supports filtering to the top or bottom N species,
 automatic formatting of scientific names (italic), and conservation
-status labeling following WildMon standards.
+status labeling following WildMon standards. Full IUCN category names
+are automatically converted to standard codes (e.g., "Least Concern"
+to "LC").
 
 If \code{species = "Species"}, names are formatted in italic.
 If \code{species = "Common_name"}, names are displayed in plain text.
 
 Conservation labeling follows this logic:
 \itemize{
-\item Species with status equal to \code{status_ref} (default \code{"LC"})
-are not labeled unless flagged.
-\item Species with a different status are labeled with their category.
+\item Full IUCN category names are automatically recoded to standard
+abbreviations (CR, EN, VU, NT, LC, DD, NE).
+\item Species with status matching any value in \code{status_ref} are not labeled.
+\item Species with a different status are labeled with their category code.
 \item If \code{flag} is provided and equals \code{flag_value}, the \code{flag_symbol}
 is appended to the label.
 }
