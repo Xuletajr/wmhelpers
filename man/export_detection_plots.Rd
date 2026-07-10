@@ -30,24 +30,26 @@ export_detection_plots(
 \item{spp_list}{A species metadata data frame passed to
 \code{\link{summarise_detections}}.}
 
-\item{plot_specs}{A named list of plot specifications. Each element must
-be a list with two elements:
+\item{plot_specs}{A list of plot specifications. Each element must be a
+list with two elements:
 \describe{
-\item{\code{filters}}{A named list of column–value pairs used to
-filter \code{detections} before summarising. For example,
+\item{\code{filters}}{A named list of column-value pairs used to filter
+\code{detections} before summarising. For example,
 \code{list(method = "audio", season = "Wet")} filters rows where
-\code{method == "audio"} AND \code{season == "Wet"}.}
-\item{\code{label}}{Character. A short descriptor used in the
-subtitle and output filename (e.g., \code{"audio_wet"}).}
+\code{method == "audio"} AND \code{season == "Wet"}. Use \code{NULL}
+or an empty list for no filtering (overall summary).}
+\item{\code{label}}{Character. A short descriptor used in the subtitle
+and output filename (e.g., \code{"audio_wet"}).}
 }
 
 Example:
 \preformatted{
   plot_specs <- list(
-    list(filters = list(method = "audio"),              label = "audio_overall"),
+    list(filters = list(method = "audio"),                 label = "audio_overall"),
     list(filters = list(method = "audio", season = "Wet"), label = "audio_wet"),
     list(filters = list(method = "camera", community = "Aishalton"),
-         label = "camera_aishalton")
+         label = "camera_aishalton"),
+    list(filters = NULL,                                   label = "all_overall")
   )
   }}
 
@@ -93,9 +95,8 @@ it as a PNG file.
 Output filenames follow the pattern:
 \code{species_detection_<label>_<project_name>.png}
 
-If a filter combination results in zero rows after filtering, the
-iteration is skipped with a warning and processing continues with the
-next specification.
+If a filter combination results in zero rows, the iteration is skipped
+with a warning and processing continues with the next specification.
 }
 \seealso{
 \code{\link{summarise_detections}},

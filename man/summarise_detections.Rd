@@ -9,15 +9,16 @@ summarise_detections(
   spp_list,
   species_col = "species",
   common_name_col = "common_name",
-  iucn_col = "iucn_code"
+  iucn_col = "iucn_code",
+  grouping_vars = NULL
 )
 }
 \arguments{
 \item{detections_df}{A data frame of detections. Must contain at minimum
 a species column (matching \code{species_col}) and a sites column named
-\code{"sites"}. Additional columns (e.g., \code{method}, \code{season},
-\code{community}, \code{landcover}) used for subsetting should be present
-if the data frame is pre-filtered before calling this function.}
+\code{"sites"}. Additional columns referenced in \code{grouping_vars}
+(e.g., \code{method}, \code{season}, \code{community}, \code{landcover})
+must be present if used.}
 
 \item{spp_list}{A data frame containing species metadata. Must contain at
 minimum a column matching \code{species_col} and the columns specified in
@@ -31,32 +32,55 @@ minimum a column matching \code{species_col} and the columns specified in
 
 \item{iucn_col}{Character. Name of the IUCN status column in
 \code{spp_list}. Defaults to \code{"iucn_code"}.}
+
+\item{grouping_vars}{Optional character vector of additional column names
+in \code{detections_df} to group by alongside species (e.g.,
+\code{"method"}, \code{c("method", "landcover")},
+\code{"community"}). If \code{NULL} (default), results are summarised
+only by species.}
 }
 \value{
-A tibble with one row per species and columns:
+A tibble with one row per species (x grouping combination if
+\code{grouping_vars} is set) and columns:
 \describe{
 \item{\code{species}}{Scientific name.}
 \item{\code{common_name}}{Common name from \code{spp_list}.}
 \item{\code{iucn_code}}{IUCN status code from \code{spp_list}.}
+\item{\code{<grouping_vars>}}{Additional grouping columns, if provided.}
 \item{\code{N_detections}}{Total number of detection records.}
 \item{\code{N_sites}}{Number of unique sites where the species
 was detected.}
 }
 }
 \description{
-Groups a detection data frame by species and returns the total number of
-detection records and the number of unique sites per species. Joins a
-species list to add common name and IUCN status code.
+Groups a detection data frame by species (and optional grouping variables)
+and returns the total number of detection records and the number of unique
+sites per species. Joins a species list to add common name and IUCN status
+code.
 }
 \details{
 This function does not apply any filtering internally — all subsetting
 (by method, season, community, landcover, etc.) should be done on
-\code{detections_df} before calling this function. This makes the
-function reusable across any combination of filters without coupling
-filter logic to summarisation logic.
+\code{detections_df} before calling this function, or passed via
+\code{grouping_vars} to split results by those dimensions.
 
 Species present in \code{detections_df} but absent from \code{spp_list}
 will have \code{NA} in \code{common_name} and \code{iucn_code}.
+}
+\examples{
+\dontrun{
+# Overall by species only
+summarise_detections(detections, spp_list, iucn_col = "iucn")
+
+# By species + method
+summarise_detections(detections, spp_list, iucn_col = "iucn",
+                     grouping_vars = "method")
+
+# By species + method + landcover
+summarise_detections(detections, spp_list, iucn_col = "iucn",
+                     grouping_vars = c("method", "landcover"))
+}
+
 }
 \seealso{
 \code{\link{plot_detection_summary}},

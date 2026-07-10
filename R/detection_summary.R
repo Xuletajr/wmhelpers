@@ -6,17 +6,18 @@
 
 #' Summarise Species Detections
 #'
-#' Groups a detection data frame by species and returns the total number of
-#' detection records and the number of unique sites per species. Joins a
-#' species list to add common name and IUCN status code.
+#' Groups a detection data frame by species (and optional grouping variables)
+#' and returns the total number of detection records and the number of unique
+#' sites per species. Joins a species list to add common name and IUCN status
+#' code.
 #'
 #' @author Jose W. Ribeiro Jr. ("Xuleta")
 #'
 #' @param detections_df A data frame of detections. Must contain at minimum
 #'   a species column (matching \code{species_col}) and a sites column named
-#'   \code{"sites"}. Additional columns (e.g., \code{method}, \code{season},
-#'   \code{community}, \code{landcover}) used for subsetting should be present
-#'   if the data frame is pre-filtered before calling this function.
+#'   \code{"sites"}. Additional columns referenced in \code{grouping_vars}
+#'   (e.g., \code{method}, \code{season}, \code{community}, \code{landcover})
+#'   must be present if used.
 #' @param spp_list A data frame containing species metadata. Must contain at
 #'   minimum a column matching \code{species_col} and the columns specified in
 #'   \code{common_name_col} and \code{iucn_col}.
@@ -26,12 +27,19 @@
 #'   \code{spp_list}. Defaults to \code{"common_name"}.
 #' @param iucn_col Character. Name of the IUCN status column in
 #'   \code{spp_list}. Defaults to \code{"iucn_code"}.
+#' @param grouping_vars Optional character vector of additional column names
+#'   in \code{detections_df} to group by alongside species (e.g.,
+#'   \code{"method"}, \code{c("method", "landcover")},
+#'   \code{"community"}). If \code{NULL} (default), results are summarised
+#'   only by species.
 #'
-#' @return A tibble with one row per species and columns:
+#' @return A tibble with one row per species (x grouping combination if
+#'   \code{grouping_vars} is set) and columns:
 #' \describe{
 #'   \item{\code{species}}{Scientific name.}
 #'   \item{\code{common_name}}{Common name from \code{spp_list}.}
 #'   \item{\code{iucn_code}}{IUCN status code from \code{spp_list}.}
+#'   \item{\code{<grouping_vars>}}{Additional grouping columns, if provided.}
 #'   \item{\code{N_detections}}{Total number of detection records.}
 #'   \item{\code{N_sites}}{Number of unique sites where the species
 #'     was detected.}
@@ -40,37 +48,51 @@
 #' @details
 #' This function does not apply any filtering internally — all subsetting
 #' (by method, season, community, landcover, etc.) should be done on
-#' \code{detections_df} before calling this function. This makes the
-#' function reusable across any combination of filters without coupling
-#' filter logic to summarisation logic.
+#' \code{detections_df} before calling this function, or passed via
+#' \code{grouping_vars} to split results by those dimensions.
 #'
 #' Species present in \code{detections_df} but absent from \code{spp_list}
 #' will have \code{NA} in \code{common_name} and \code{iucn_code}.
 #'
+#' @examples
+#' \dontrun{
+#' # Overall by species only
+#' summarise_detections(detections, spp_list, iucn_col = "iucn")
+#'
+#' # By species + method
+#' summarise_detections(detections, spp_list, iucn_col = "iucn",
+#'                      grouping_vars = "method")
+#'
+#' # By species + method + landcover
+#' summarise_detections(detections, spp_list, iucn_col = "iucn",
+#'                      grouping_vars = c("method", "landcover"))
+#' }
+#'
 #' @seealso \code{\link{plot_detection_summary}},
 #'   \code{\link{export_detection_plots}}
 #'
-#' @importFrom dplyr left_join select group_by summarise n n_distinct
+#' @importFrom dplyr left_join select group_by summarise n n_distinct across
+#'   all_of rename
 #'
 #' @export
 summarise_detections <- function(detections_df,
                                  spp_list,
                                  species_col     = "species",
                                  common_name_col = "common_name",
-                                 iucn_col        = "iucn_code") {
+                                 iucn_col        = "iucn_code",
+                                 grouping_vars   = NULL) {
 
   # ── Input validation ─────────────────────────────────────────────────────────
   stopifnot(
-    "detections_df must be a data frame" = is.data.frame(detections_df),
-    "spp_list must be a data frame"      = is.data.frame(spp_list),
+    "detections_df must be a data frame"  = is.data.frame(detections_df),
+    "spp_list must be a data frame"       = is.data.frame(spp_list),
     "species_col must be a single string" = is.character(species_col) &&
       length(species_col) == 1,
     "'sites' column must exist in detections_df" =
       "sites" %in% names(detections_df)
   )
 
-  missing_det <- setdiff(species_col, names(detections_df))
-  if (length(missing_det) > 0) {
+  if (!species_col %in% names(detections_df)) {
     stop("Column '", species_col, "' not found in detections_df.")
   }
 
@@ -81,20 +103,25 @@ summarise_detections <- function(detections_df,
          paste(missing_spp, collapse = ", "))
   }
 
-  # ── Join metadata and summarise ───────────────────────────────────────────
+  if (!is.null(grouping_vars)) {
+    missing_grp <- setdiff(grouping_vars, names(detections_df))
+    if (length(missing_grp) > 0) {
+      stop("grouping_vars columns not found in detections_df: ",
+           paste(missing_grp, collapse = ", "))
+    }
+  }
+
+  # ── Build group_by keys: species + metadata + optional grouping_vars ─────────
+  group_keys <- c(species_col, common_name_col, iucn_col, grouping_vars)
+
+  # ── Join metadata and summarise ───────────────────────────────────────────────
   detections_df %>%
     dplyr::left_join(
       spp_list %>%
-        dplyr::select(
-          dplyr::all_of(c(species_col, common_name_col, iucn_col))
-        ),
+        dplyr::select(dplyr::all_of(c(species_col, common_name_col, iucn_col))),
       by = species_col
     ) %>%
-    dplyr::group_by(
-      .data[[species_col]],
-      .data[[common_name_col]],
-      .data[[iucn_col]]
-    ) %>%
+    dplyr::group_by(dplyr::across(dplyr::all_of(group_keys))) %>%
     dplyr::summarise(
       N_detections = dplyr::n(),
       N_sites      = dplyr::n_distinct(sites),
@@ -165,7 +192,7 @@ plot_detection_summary <- function(det_summary,
          paste(missing_cols, collapse = ", "))
   }
 
-  # ── Detections plot ──────────────────────────────────────────────────────
+  # ── Detections plot ───────────────────────────────────────────────────────────
   p_det <- wmhelpers::plot_bar_species(
     dat       = det_summary,
     value     = "N_detections",
@@ -177,7 +204,7 @@ plot_detection_summary <- function(det_summary,
     subtitle  = subtitle
   )
 
-  # ── Sites plot ────────────────────────────────────────────────────────────
+  # ── Sites plot ────────────────────────────────────────────────────────────────
   p_sites <- wmhelpers::plot_bar_species(
     dat       = det_summary,
     value     = "N_sites",
@@ -209,24 +236,26 @@ plot_detection_summary <- function(det_summary,
 #'   \code{community}, \code{landcover}).
 #' @param spp_list A species metadata data frame passed to
 #'   \code{\link{summarise_detections}}.
-#' @param plot_specs A named list of plot specifications. Each element must
-#'   be a list with two elements:
+#' @param plot_specs A list of plot specifications. Each element must be a
+#'   list with two elements:
 #'   \describe{
-#'     \item{\code{filters}}{A named list of column–value pairs used to
-#'       filter \code{detections} before summarising. For example,
+#'     \item{\code{filters}}{A named list of column-value pairs used to filter
+#'       \code{detections} before summarising. For example,
 #'       \code{list(method = "audio", season = "Wet")} filters rows where
-#'       \code{method == "audio"} AND \code{season == "Wet"}.}
-#'     \item{\code{label}}{Character. A short descriptor used in the
-#'       subtitle and output filename (e.g., \code{"audio_wet"}).}
+#'       \code{method == "audio"} AND \code{season == "Wet"}. Use \code{NULL}
+#'       or an empty list for no filtering (overall summary).}
+#'     \item{\code{label}}{Character. A short descriptor used in the subtitle
+#'       and output filename (e.g., \code{"audio_wet"}).}
 #'   }
 #'
 #'   Example:
 #'   \preformatted{
 #'   plot_specs <- list(
-#'     list(filters = list(method = "audio"),              label = "audio_overall"),
+#'     list(filters = list(method = "audio"),                 label = "audio_overall"),
 #'     list(filters = list(method = "audio", season = "Wet"), label = "audio_wet"),
 #'     list(filters = list(method = "camera", community = "Aishalton"),
-#'          label = "camera_aishalton")
+#'          label = "camera_aishalton"),
+#'     list(filters = NULL,                                   label = "all_overall")
 #'   )
 #'   }
 #' @param output_path Character. Directory where PNG files are saved.
@@ -253,9 +282,8 @@ plot_detection_summary <- function(det_summary,
 #' Output filenames follow the pattern:
 #' \code{species_detection_<label>_<project_name>.png}
 #'
-#' If a filter combination results in zero rows after filtering, the
-#' iteration is skipped with a warning and processing continues with the
-#' next specification.
+#' If a filter combination results in zero rows, the iteration is skipped
+#' with a warning and processing continues with the next specification.
 #'
 #' @seealso \code{\link{summarise_detections}},
 #'   \code{\link{plot_detection_summary}}
@@ -282,19 +310,19 @@ export_detection_plots <- function(detections,
 
   # ── Input validation ─────────────────────────────────────────────────────────
   stopifnot(
-    "detections must be a data frame"    = is.data.frame(detections),
-    "spp_list must be a data frame"      = is.data.frame(spp_list),
-    "plot_specs must be a list"          = is.list(plot_specs),
-    "output_path must be a single string" = is.character(output_path) &&
+    "detections must be a data frame"      = is.data.frame(detections),
+    "spp_list must be a data frame"        = is.data.frame(spp_list),
+    "plot_specs must be a list"            = is.list(plot_specs),
+    "output_path must be a single string"  = is.character(output_path) &&
       length(output_path) == 1,
     "project_name must be a single string" = is.character(project_name) &&
       length(project_name) == 1,
-    "dpi must be a positive number"      = is.numeric(dpi) && dpi > 0
+    "dpi must be a positive number"        = is.numeric(dpi) && dpi > 0
   )
 
   if (!endsWith(output_path, "/")) output_path <- paste0(output_path, "/")
 
-  # ── Validate plot_specs structure ─────────────────────────────────────────
+  # ── Validate plot_specs structure ─────────────────────────────────────────────
   for (i in seq_along(plot_specs)) {
     spec <- plot_specs[[i]]
     if (!all(c("filters", "label") %in% names(spec))) {
@@ -302,19 +330,22 @@ export_detection_plots <- function(detections,
     }
   }
 
-  # ── Iterate and export ────────────────────────────────────────────────────
+  # ── Iterate and export ────────────────────────────────────────────────────────
   purrr::walk(plot_specs, function(spec) {
 
-    # ── Apply all filters dynamically ────────────────────────────────────────
+    # ── Apply all filters dynamically ──────────────────────────────────────────
     dat <- detections
-    for (col in names(spec$filters)) {
-      val <- spec$filters[[col]]
-      if (!col %in% names(dat)) {
-        warning("Filter column '", col, "' not found in detections. ",
-                "Skipping spec '", spec$label, "'.")
-        return(invisible(NULL))
+
+    if (!is.null(spec$filters) && length(spec$filters) > 0) {
+      for (col in names(spec$filters)) {
+        val <- spec$filters[[col]]
+        if (!col %in% names(dat)) {
+          warning("Filter column '", col, "' not found in detections. ",
+                  "Skipping spec '", spec$label, "'.")
+          return(invisible(NULL))
+        }
+        dat <- dplyr::filter(dat, .data[[col]] == val)
       }
-      dat <- dplyr::filter(dat, .data[[col]] == val)
     }
 
     if (nrow(dat) == 0) {
@@ -323,7 +354,7 @@ export_detection_plots <- function(detections,
       return(invisible(NULL))
     }
 
-    # ── Summarise ─────────────────────────────────────────────────────────────
+    # ── Summarise ──────────────────────────────────────────────────────────────
     det_summary <- summarise_detections(
       detections_df   = dat,
       spp_list        = spp_list,
@@ -332,7 +363,7 @@ export_detection_plots <- function(detections,
       iucn_col        = iucn_col
     )
 
-    # ── Build plots ───────────────────────────────────────────────────────────
+    # ── Build plots ────────────────────────────────────────────────────────────
     plots <- plot_detection_summary(
       det_summary = det_summary,
       top_n       = top_n,
@@ -342,7 +373,7 @@ export_detection_plots <- function(detections,
       status_col  = iucn_col
     )
 
-    # ── Export panel ──────────────────────────────────────────────────────────
+    # ── Export panel ───────────────────────────────────────────────────────────
     out_file <- paste0(
       output_path,
       "species_detection_", spec$label, "_", project_name, ".png"
