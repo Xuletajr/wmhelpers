@@ -29,27 +29,45 @@
 #' A time step is considered valid for a given site if at least one species
 #' has a non-\code{NA} value in that column of the site matrix.
 #'
+#' @note
+#' When a site has only one valid time step, subsetting the site matrix with
+#' a scalar index would normally cause R to drop the dimension and return a
+#' vector instead of a matrix. This is handled internally by wrapping the
+#' result in \code{matrix()} with explicit \code{nrow} and \code{ncol},
+#' ensuring consistent 2D structure regardless of the number of valid visits.
+#'
+#' @seealso \code{\link{build_detection_array}},
+#'   \code{\link{aggregate_detection_windows}}
+#'
 #' @export
 build_reindexed_visits <- function(y) {
-  sp <- dim(y)[1]
+
+  sp    <- dim(y)[1]
   sites <- dim(y)[2]
 
   y_new_list <- list()
 
-  for(i in 1:sites){
+  for (i in 1:sites) {
 
     site_matrix <- y[, i, ]
+    keep        <- which(colSums(!is.na(site_matrix)) > 0)
 
-    keep <- which(colSums(!is.na(site_matrix)) > 0)
-
-    y_new_list[[i]] <- site_matrix[, keep]
+    # Force matrix even when keep has length 1 (avoids vector coercion).
+    # Without this, R drops the dimension and returns a vector when only
+    # one valid time step exists, causing ncol() to return NULL and
+    # breaking the subsequent max(sapply(..., ncol)) call.
+    y_new_list[[i]] <- matrix(
+      site_matrix[, keep],
+      nrow = sp,
+      ncol = length(keep)
+    )
   }
 
   max_visits <- max(sapply(y_new_list, ncol))
 
   y_new <- array(NA, dim = c(sp, sites, max_visits))
 
-  for(i in 1:sites){
+  for (i in 1:sites) {
     y_new[, i, 1:ncol(y_new_list[[i]])] <- y_new_list[[i]]
   }
 
