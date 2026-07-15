@@ -36,6 +36,17 @@ history.
 A time step is considered valid for a given site if at least one species
 has a non-\code{NA} value in that column of the site matrix.
 }
+\note{
+When a site has only one valid time step, subsetting the site matrix with
+a scalar index would normally cause R to drop the dimension and return a
+vector instead of a matrix. This is handled internally by wrapping the
+result in \code{matrix()} with explicit \code{nrow} and \code{ncol},
+ensuring consistent 2D structure regardless of the number of valid visits.
+}
+\seealso{
+\code{\link{build_detection_array}},
+\code{\link{aggregate_detection_windows}}
+}
 \author{
 Jose W. Ribeiro Jr. ("Xuleta")
 }

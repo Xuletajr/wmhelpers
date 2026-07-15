@@ -6,9 +6,7 @@
 #' least one day, not detected (0) if sampled but never detected, and
 #' missing (NA) if all days in the window were unsampled (NA).
 #'
-#' This aggregation reduces the size of the detection array, decreases
-#' sparsity in detection histories, and typically improves MCMC convergence
-#' in multi-species occupancy models (e.g., \code{spOccupancy::msPGOcc}).
+#' @author Jose W. Ribeiro Jr. ("Xuleta")
 #'
 #' @param y A 3D array of dimensions \code{[species × sites × days]}
 #'   containing binary detection/non-detection data (0/1) and structural
@@ -18,26 +16,10 @@
 #' @param window Integer. Number of days to aggregate per sampling occasion.
 #'   Defaults to \code{5}. Only complete windows are retained; trailing
 #'   days that do not fill a complete window are discarded.
-#' @param export_effort Logical. If \code{TRUE}, returns a list containing
-#'   both the aggregated array and a \code{sites × windows} matrix with the
-#'   number of valid (non-NA) days per window per site. Useful for
-#'   identifying windows with reduced sampling effort, particularly the last
-#'   window. Defaults to \code{FALSE}.
 #'
-#' @return If \code{export_effort = FALSE} (default): a 3D array of
-#'   dimensions \code{[species × sites × n_windows]} with aggregated
-#'   detection histories.
-#'
-#'   If \code{export_effort = TRUE}: a named list with two elements:
-#'   \describe{
-#'     \item{\code{y}}{The aggregated 3D detection array
-#'       (\code{species × sites × n_windows}).}
-#'     \item{\code{effort}}{A numeric matrix (\code{sites × n_windows})
-#'       with the number of valid sampled days per window per site.
-#'       Values range from 0 (fully unsampled window) to \code{window}
-#'       (fully sampled window). The last window often has fewer days
-#'       for sites with non-multiple sampling periods.}
-#'   }
+#' @return A 3D array of dimensions \code{[species × sites × n_windows]}
+#'   with aggregated detection histories, where \code{n_windows =
+#'   floor(n_days / window)}.
 #'
 #' @details
 #' Only complete windows of size \code{window} are retained.
@@ -49,28 +31,36 @@
 #' window are \code{NA} for a given site — meaning the site was not
 #' operational during that period.
 #'
+#' Sampling effort (number of valid days per window per site) should be
+#' computed after calling \code{\link{build_reindexed_visits}} on the
+#' output of this function, using the reindexed array directly:
+#'
+#' \preformatted{
+#' y_agg <- aggregate_detection_windows(y, window = 5)
+#' y     <- build_reindexed_visits(y_agg)
+#'
+#' # Effort: sites x visits (uses species 1 as NA mask proxy)
+#' effort <- apply(!is.na(y[1, , ]), c(1, 2), as.integer)
+#' }
+#'
 #' @examples
 #' \dontrun{
-#' # Basic aggregation into 5-day windows
+#' # Aggregate into 5-day windows
 #' y_agg <- aggregate_detection_windows(y_reindexed, window = 5)
 #' dim(y_agg)
 #'
-#' # With effort matrix to inspect last-window sampling
-#' result <- aggregate_detection_windows(y_reindexed, window = 5, export_effort = TRUE)
-#' y_agg   <- result$y
-#' effort  <- result$effort
+#' # Then reindex to remove empty windows per site
+#' y <- build_reindexed_visits(y_agg)
 #'
-#' # Sites where last window has < 5 days
-#' effort[, ncol(effort)]
+#' # Compute effort after reindexing
+#' effort <- apply(!is.na(y[1, , ]), c(1, 2), as.integer)
 #' }
 #'
 #' @seealso \code{\link{build_detection_array}},
 #'   \code{\link{build_reindexed_visits}}
 #'
-#' @author Jose W. Ribeiro Jr. ("Xuleta")
-#'
 #' @export
-aggregate_detection_windows <- function(y, window = 5, export_effort = FALSE) {
+aggregate_detection_windows <- function(y, window = 5) {
 
   n_sp    <- dim(y)[1]
   n_sites <- dim(y)[2]
@@ -85,26 +75,17 @@ aggregate_detection_windows <- function(y, window = 5, export_effort = FALSE) {
          "Consider reducing 'window'.")
   }
 
-  y_agg  <- array(NA, dim = c(n_sp, n_sites, n_windows))
-  effort <- matrix(0L, nrow = n_sites, ncol = n_windows)
+  y_agg <- array(NA, dim = c(n_sp, n_sites, n_windows))
 
   for (w in seq_len(n_windows)) {
 
     idx <- ((w - 1) * window + 1):(w * window)
 
-    # Aggregate detection: presence if detected on any day in window
+    # Presence in window = 1 if detected on any day; NA if all days are NA
     y_agg[, , w] <- apply(
       y[, , idx, drop = FALSE], c(1, 2),
       function(x) if (all(is.na(x))) NA_real_ else max(x, na.rm = TRUE)
     )
-
-    # Count valid (non-NA) days per site in this window (using species 1 as mask)
-    effort[, w] <- apply(y[1, , idx, drop = FALSE], 1,
-                         function(x) sum(!is.na(x)))
-  }
-
-  if (export_effort) {
-    return(list(y = y_agg, effort = effort))
   }
 
   return(y_agg)
