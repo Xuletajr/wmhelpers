@@ -16,14 +16,59 @@ compute_detection(
   method_index = 1L
 )
 }
+\arguments{
+\item{out_bestmodel}{Fitted model object containing
+\code{alpha.comm.samples} and \code{X.p}.}
+
+\item{scaled_centered_list}{Named list of scaled covariate sequences, as
+returned by \code{\link{build_occ_sequences}}.}
+
+\item{variables_to_scale}{Character vector of continuous variable names.
+Each name must appear in both \code{scaled_centered_list} and the column
+names of the relevant \code{alpha.comm.samples} block.}
+
+\item{class_levels_labels}{Character vector of display labels for the
+categorical detection covariate (e.g. \code{c("Dry season", "Wet
+season")}). The first element is treated as the reference/intercept
+level. Must be parallel to \code{class_levels_model}.}
+
+\item{class_levels_model}{Character vector of coefficient names exactly as
+they appear in \code{alpha.comm.samples} for the target method block
+(e.g. \code{c("(Intercept)", "season")}). Must be parallel to
+\code{class_levels_labels}.}
+
+\item{nsamp}{Integer. Number of posterior samples to use for prediction.}
+
+\item{n_pred}{Integer. Number of prediction points per variable.
+Defaults to \code{100L}.}
+
+\item{method_index}{Integer. Index of the detection method block in
+\code{alpha.comm.samples}/\code{X.p} (1 = first method). Only relevant
+for integrated multi-method models; must be \code{1L} for single-method
+models. Defaults to \code{1L}.}
+}
+\value{
+A named list with two elements:
+\describe{
+\item{\code{predDet}}{3-dimensional array \code{[n_pred x nsamp x
+    n_combinations]} of posterior detection probabilities on the
+probability scale (after \code{plogis}).}
+\item{\code{comb_df}}{Data frame of all variable x class_label
+combinations used to build the array.}
+}
+}
 \description{
 Analogous to \code{\link{compute_occupancy}}, but for the detection
 sub-model (\code{alpha.comm.samples} / \code{X.p}) instead of occupancy
-(\code{beta.comm.samples} / \code{X}).
+(\code{beta.comm.samples} / \code{X}). Supports both single-method models
+(\code{msPGOcc}, where \code{X.p} is a single matrix) and integrated
+multi-method models (\code{intMsPGOcc}, where \code{X.p} is a list of
+matrices, one per method).
 }
 \seealso{
 \code{\link{build_occ_sequences}}, \code{\link{compute_occupancy}},
-\code{\link{build_occ_summary}}, \code{\link{compute_det_predictions}}
+\code{\link{build_occ_summary}}, \code{\link{compute_det_predictions}},
+\code{\link{predict_detection_julian}}
 }
 \author{
 Thiago Bicudo
