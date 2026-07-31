@@ -5,12 +5,16 @@
 #' to a combination of variable \eqn{\times} year \eqn{\times} (optionally) class.
 #'
 #' @param pred_occ_df Tidy data frame returned by
-#'   \code{\link{summarise_occ_predictions}}. Must include columns:
+#'   \code{\link{build_occ_summary}}. Must include columns:
 #'   \code{variable}, \code{expanded_variable}, \code{seq_data},
 #'   \code{mean}, \code{ciL}, \code{ciU}, and optionally
 #'   \code{year} and \code{class}.
 #' @param type_levels Optional character vector of class/type levels
 #'   (e.g. habitat types). Defaults to \code{NULL}.
+#' @param y_label Character. Label for the y-axis. Defaults to
+#'   \code{"Occupancy probability"}. Override with
+#'   \code{"Detection probability"} when plotting output from
+#'   \code{\link{compute_det_predictions}}.
 #' @param color_ribbon Character. Ribbon fill colour.
 #'   Defaults to \code{"#CCCCCC"}.
 #' @param color_line Character. Line colour.
@@ -39,10 +43,10 @@
 #'   \code{"scosa_2023"} for multi-year models).
 #'
 #' @description
-#' Generates smooth occupancy response curves with credible intervals for
+#' Generates smooth response curves with credible intervals for
 #' each predictor. Supports optional faceting by year and class.
 #' Column names are aligned with the output of
-#' \code{\link{summarise_occ_predictions}}: x-axis uses \code{seq_data}
+#' \code{\link{build_occ_summary}}: x-axis uses \code{seq_data}
 #' and credible interval bounds use \code{ciL}/\code{ciU}.
 #'
 #' When \code{year} or \code{class} are \code{NA} (e.g. single-period
@@ -58,18 +62,19 @@
 
 plot_occ_predictions <- function(
     pred_occ_df,
-    type_levels       = NULL,
-    color_ribbon      = "#CCCCCC",
-    color_line        = "#1B3A5C",
-    color_text        = "#1B3A5C",
-    color_strip_bg    = "#E8EEF4",
-    ribbon_alpha      = 0.55,
-    x_size            = 12,
-    y_size            = 12,
-    title_size        = 13,
-    legend_title_size = 12,
-    legend_text_size  = 11,
-    strip_class_prefix = ""
+    type_levels        = NULL,
+    y_label             = "Occupancy probability",
+    color_ribbon        = "#CCCCCC",
+    color_line          = "#1B3A5C",
+    color_text          = "#1B3A5C",
+    color_strip_bg      = "#E8EEF4",
+    ribbon_alpha        = 0.55,
+    x_size              = 12,
+    y_size              = 12,
+    title_size          = 13,
+    legend_title_size   = 12,
+    legend_text_size    = 11,
+    strip_class_prefix  = ""
 ) {
 
   # Input validation
@@ -138,7 +143,7 @@ plot_occ_predictions <- function(
       ggplot2::geom_line(color = color_line, linewidth = 1) +
       ggplot2::labs(
         x     = x_label,
-        y     = "Occupancy probability",
+        y     = y_label,
         title = plot_title
       ) +
       ggplot2::theme_minimal() +

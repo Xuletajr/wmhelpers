@@ -7,6 +7,7 @@
 plot_occ_predictions(
   pred_occ_df,
   type_levels = NULL,
+  y_label = "Occupancy probability",
   color_ribbon = "#CCCCCC",
   color_line = "#1B3A5C",
   color_text = "#1B3A5C",
@@ -22,13 +23,18 @@ plot_occ_predictions(
 }
 \arguments{
 \item{pred_occ_df}{Tidy data frame returned by
-\code{\link{summarise_occ_predictions}}. Must include columns:
+\code{\link{build_occ_summary}}. Must include columns:
 \code{variable}, \code{expanded_variable}, \code{seq_data},
 \code{mean}, \code{ciL}, \code{ciU}, and optionally
 \code{year} and \code{class}.}
 
 \item{type_levels}{Optional character vector of class/type levels
 (e.g. habitat types). Defaults to \code{NULL}.}
+
+\item{y_label}{Character. Label for the y-axis. Defaults to
+\code{"Occupancy probability"}. Override with
+\code{"Detection probability"} when plotting output from
+\code{\link{compute_det_predictions}}.}
 
 \item{color_ribbon}{Character. Ribbon fill colour.
 Defaults to \code{"#CCCCCC"}.}
@@ -69,10 +75,10 @@ non-NA grouping keys (e.g. \code{"scosa"} for single-period models,
 \code{"scosa_2023"} for multi-year models).
 }
 \description{
-Generates smooth occupancy response curves with credible intervals for
+Generates smooth response curves with credible intervals for
 each predictor. Supports optional faceting by year and class.
 Column names are aligned with the output of
-\code{\link{summarise_occ_predictions}}: x-axis uses \code{seq_data}
+\code{\link{build_occ_summary}}: x-axis uses \code{seq_data}
 and credible interval bounds use \code{ciL}/\code{ciU}.
 
 When \code{year} or \code{class} are \code{NA} (e.g. single-period
