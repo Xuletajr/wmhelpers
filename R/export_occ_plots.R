@@ -1,15 +1,23 @@
-#' Export Occupancy Prediction Plots to PNG
+#' Export Occupancy or Detection Prediction Plots to PNG
 #'
-#' Saves individual PNG files for each occupancy prediction plot and
-#' optionally creates a combined multiplot for a subset of variables.
+#' Saves individual PNG files for each prediction plot and optionally
+#' creates a combined multiplot for a subset of variables. Works for both
+#' occupancy predictions (\code{\link{compute_occ_predictions}}) and
+#' detection predictions (\code{\link{compute_det_predictions}}) — use
+#' \code{model_type} to distinguish them in the output filenames.
 #'
 #' @param plot_list Named list of \code{ggplot} objects returned by
 #'   \code{\link{plot_occ_predictions}}.
 #' @param output_dir Character. Directory where plots will be saved.
 #'   A trailing "/" will be added if missing.
 #' @param project_name Character. String appended to all output filenames.
-#' @param tag Optional character string inserted into all filenames before
-#'   \code{.png} (e.g. \code{"audio"}, \code{"birds"}, \code{"amphibians"}).
+#' @param model_type Character. Prefix identifying the type of model the
+#'   plots come from — \code{"occ"} (occupancy, default) or \code{"det"}
+#'   (detection). Keeps filenames consistent regardless of what
+#'   \code{tag} is used for.
+#' @param tag Optional character string identifying methodology or
+#'   biological group (e.g. \code{"audio"}, \code{"camera"}, \code{"birds"},
+#'   \code{"amphibians"}). Inserted into all filenames before \code{.png}.
 #'   Defaults to \code{NULL} (no tag added).
 #' @param type_levels Optional character vector (used only for filename tagging).
 #' @param selected_vars Optional character vector of variables to include in
@@ -25,7 +33,11 @@
 #' creates a combined multiplot using \code{patchwork}.
 #'
 #' File naming convention:
-#' \code{occ_<variable>[_<type_tag>][_<tag>]_<project_name>.png}
+#' \code{<model_type>_<variable>[_<type_tag>][_<tag>]_<project_name>.png}
+#'
+#' Any spaces present in variable/class names (e.g. display labels like
+#' \code{"Wet season"}) are stripped from the final filename to keep it
+#' filesystem-safe.
 #'
 #' @author Thiago Bicudo
 #'
@@ -37,6 +49,7 @@ export_occ_plots <- function(
     plot_list,
     output_dir,
     project_name,
+    model_type = "occ",
     tag = NULL,
     type_levels = NULL,
     selected_vars = NULL,
@@ -51,7 +64,9 @@ export_occ_plots <- function(
   stopifnot(
     "plot_list must be a list"         = is.list(plot_list),
     "output_dir must be character"     = is.character(output_dir),
-    "project_name must be character"   = is.character(project_name)
+    "project_name must be character"   = is.character(project_name),
+    "model_type must be a single character string" =
+      is.character(model_type) && length(model_type) == 1
   )
 
   if (!is.null(tag)) {
@@ -82,8 +97,12 @@ export_occ_plots <- function(
 
     file_name <- paste0(
       output_dir,
-      "occ_", nm, type_tag, custom_tag, "_", project_name, ".png"
+      model_type, "_", nm, type_tag, custom_tag, "_", project_name, ".png"
     )
+
+    # Strip spaces (e.g. from display labels like "Wet season") to keep
+    # the filename filesystem-safe.
+    file_name <- gsub(" ", "", file_name)
 
     ggplot2::ggsave(
       filename = file_name,
@@ -114,8 +133,9 @@ export_occ_plots <- function(
 
     multi_name <- paste0(
       output_dir,
-      "occ_MULTIPLOT", type_tag, custom_tag, "_", project_name, ".png"
+      model_type, "_MULTIPLOT", type_tag, custom_tag, "_", project_name, ".png"
     )
+    multi_name <- gsub(" ", "", multi_name)
 
     ggplot2::ggsave(
       filename = multi_name,

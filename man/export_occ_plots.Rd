@@ -2,12 +2,13 @@
 % Please edit documentation in R/export_occ_plots.R
 \name{export_occ_plots}
 \alias{export_occ_plots}
-\title{Export Occupancy Prediction Plots to PNG}
+\title{Export Occupancy or Detection Prediction Plots to PNG}
 \usage{
 export_occ_plots(
   plot_list,
   output_dir,
   project_name,
+  model_type = "occ",
   tag = NULL,
   type_levels = NULL,
   selected_vars = NULL,
@@ -27,8 +28,14 @@ A trailing "/" will be added if missing.}
 
 \item{project_name}{Character. String appended to all output filenames.}
 
-\item{tag}{Optional character string inserted into all filenames before
-\code{.png} (e.g. \code{"audio"}, \code{"birds"}, \code{"amphibians"}).
+\item{model_type}{Character. Prefix identifying the type of model the
+plots come from — \code{"occ"} (occupancy, default) or \code{"det"}
+(detection). Keeps filenames consistent regardless of what
+\code{tag} is used for.}
+
+\item{tag}{Optional character string identifying methodology or
+biological group (e.g. \code{"audio"}, \code{"camera"}, \code{"birds"},
+\code{"amphibians"}). Inserted into all filenames before \code{.png}.
 Defaults to \code{NULL} (no tag added).}
 
 \item{type_levels}{Optional character vector (used only for filename tagging).}
@@ -50,11 +57,18 @@ Exports all plots in \code{plot_list} as individual PNG files and optionally
 creates a combined multiplot using \code{patchwork}.
 
 File naming convention:
-\code{occ_<variable>[_<type_tag>][_<tag>]_<project_name>.png}
+\code{<model_type>_<variable>[_<type_tag>][_<tag>]_<project_name>.png}
+
+Any spaces present in variable/class names (e.g. display labels like
+\code{"Wet season"}) are stripped from the final filename to keep it
+filesystem-safe.
 }
 \details{
-Saves individual PNG files for each occupancy prediction plot and
-optionally creates a combined multiplot for a subset of variables.
+Saves individual PNG files for each prediction plot and optionally
+creates a combined multiplot for a subset of variables. Works for both
+occupancy predictions (\code{\link{compute_occ_predictions}}) and
+detection predictions (\code{\link{compute_det_predictions}}) — use
+\code{model_type} to distinguish them in the output filenames.
 }
 \author{
 Thiago Bicudo
