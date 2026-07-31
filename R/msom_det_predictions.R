@@ -8,7 +8,7 @@
 #' multi-method models (\code{intMsPGOcc}, where \code{X.p} is a list of
 #' matrices, one per method).
 #'
-#' @author Thiago Bicudo
+#' @author José Wagner Ribeiro Jr (Xuleta)
 #'
 #' @param out_bestmodel Fitted model object containing
 #'   \code{alpha.comm.samples} and \code{X.p}.

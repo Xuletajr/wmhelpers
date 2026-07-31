@@ -71,5 +71,5 @@ matrices, one per method).
 \code{\link{predict_detection_julian}}
 }
 \author{
-Thiago Bicudo
+José Wagner Ribeiro Jr (Xuleta)
 }
