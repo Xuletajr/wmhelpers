@@ -174,3 +174,114 @@ compute_detection <- function(out_bestmodel,
 
   list(predDet = predDet, comb_df = comb_df)
 }
+
+#' Run the Full Detection Prediction Pipeline
+#'
+#' Wrapper that executes the complete detection prediction workflow by
+#' sequentially calling \code{\link{build_occ_sequences}},
+#' \code{\link{compute_detection}}, and \code{\link{build_occ_summary}}.
+#' Mirrors \code{\link{compute_occ_predictions}} for the detection sub-model.
+#'
+#' @author José Wagner Ribeiro Jr (Xuleta)
+#'
+#' @param variables_to_scale Character vector of continuous variable names
+#'   to be standardised and used for prediction. Each name must exist as a
+#'   column in \code{variables_df} and in the relevant \code{alpha.comm.samples}
+#'   block.
+#' @param variables_df Data frame containing raw covariate data.
+#' @param out_bestmodel Fitted occupancy model object containing
+#'   \code{alpha.comm.samples} and \code{X.p}.
+#' @param class_levels_labels Character vector of display labels for the
+#'   categorical detection covariate (e.g. \code{c("Dry season", "Wet
+#'   season")}). The first element is treated as the reference/intercept
+#'   level. Must be parallel to \code{class_levels_model}.
+#' @param class_levels_model Character vector of coefficient names exactly as
+#'   they appear in \code{alpha.comm.samples} for the target method block
+#'   (e.g. \code{c("(Intercept)", "season")}). Must be parallel to
+#'   \code{class_levels_labels}.
+#' @param nsamp Integer. Number of posterior samples to use for prediction.
+#' @param n_pred Integer. Number of prediction points per variable.
+#'   Defaults to \code{100L}.
+#' @param method_index Integer. Index of the detection method block in
+#'   \code{alpha.comm.samples}/\code{X.p} (1 = first method). Only relevant
+#'   for integrated multi-method models. Defaults to \code{1L}.
+#' @param variable_labels Optional named character vector mapping short
+#'   variable names to human-readable axis labels
+#'   (e.g. \code{c(canopyHeight = "Canopy Height (m)")}). Defaults to
+#'   \code{NULL}.
+#'
+#' @return A named list containing:
+#' \describe{
+#'   \item{\code{seq_list}}{Named list of raw covariate sequences per
+#'     variable.}
+#'   \item{\code{scaled_centered_list}}{Named list of scaled and centred
+#'     sequences per variable.}
+#'   \item{\code{predDet}}{3-dimensional array of posterior detection
+#'     probabilities \code{[n_pred x nsamp x n_combinations]}.}
+#'   \item{\code{pred_det_df}}{Tidy data frame of posterior summaries
+#'     (mean, SD, credible intervals) ready for
+#'     \code{\link{plot_occ_predictions}}.}
+#' }
+#'
+#' @seealso \code{\link{compute_occ_predictions}}, \code{\link{compute_detection}},
+#'   \code{\link{build_occ_sequences}}, \code{\link{build_occ_summary}},
+#'   \code{\link{plot_occ_predictions}}
+#'
+#' @export
+compute_det_predictions <- function(variables_to_scale,
+                                    variables_df,
+                                    out_bestmodel,
+                                    class_levels_labels,
+                                    class_levels_model,
+                                    nsamp,
+                                    n_pred          = 100L,
+                                    method_index    = 1L,
+                                    variable_labels = NULL) {
+
+  # ── Input validation ─────────────────────────────────────────────────────────
+  stopifnot(
+    "variables_to_scale must be character"  = is.character(variables_to_scale),
+    "variables_df must be a data.frame"     = is.data.frame(variables_df),
+    "class_levels_labels must be character" = is.character(class_levels_labels),
+    "class_levels_model must be character"  = is.character(class_levels_model),
+    "class_levels_labels and class_levels_model must have the same length" =
+      length(class_levels_labels) == length(class_levels_model),
+    "nsamp must be numeric"                 = is.numeric(nsamp),
+    "n_pred must be numeric"                = is.numeric(n_pred)
+  )
+
+  # ── Step 1: Build covariate sequences ────────────────────────────────────────
+  prep <- build_occ_sequences(
+    variables_to_scale = variables_to_scale,
+    variables_df       = variables_df,
+    n_pred             = n_pred
+  )
+
+  # ── Step 2: Compute posterior detection predictions ───────────────────────────
+  pred <- compute_detection(
+    out_bestmodel        = out_bestmodel,
+    scaled_centered_list = prep$scaled_centered_list,
+    variables_to_scale   = variables_to_scale,
+    class_levels_labels  = class_levels_labels,
+    class_levels_model   = class_levels_model,
+    nsamp                = nsamp,
+    n_pred               = n_pred,
+    method_index         = method_index
+  )
+
+  # ── Step 3: Summarise into tidy data frame ────────────────────────────────────
+  pred_det_df <- build_occ_summary(
+    predOcc            = pred$predDet,
+    year_levels_labels = class_levels_labels,
+    type_levels         = NULL,
+    seq_list            = prep$seq_list,
+    variable_labels     = variable_labels
+  )
+
+  list(
+    seq_list             = prep$seq_list,
+    scaled_centered_list = prep$scaled_centered_list,
+    predDet              = pred$predDet,
+    pred_det_df          = pred_det_df
+  )
+}
