@@ -2,7 +2,7 @@
 % Please edit documentation in R/richness_plots.R
 \name{plot_richness_ridgeline}
 \alias{plot_richness_ridgeline}
-\title{Ridgeline density plot of species richness}
+\title{Ridgeline density plot of species richness by group}
 \usage{
 plot_richness_ridgeline(
   richness_density,
@@ -11,6 +11,7 @@ plot_richness_ridgeline(
   alpha = 0.7,
   scale = 1.5,
   palette = c("#008AA1", "#B90078", "#00D973"),
+  color_map = NULL,
   title = NULL,
   x_label = "Estimated Species Richness",
   y_label = NULL,
@@ -18,26 +19,33 @@ plot_richness_ridgeline(
 )
 }
 \arguments{
-\item{richness_density}{A long-format \code{tibble} output from
-\code{build_richness_density()}, containing columns \code{richness} and
-the variable named in \code{group_var}.}
+\item{richness_density}{A long-format data frame, typically the output of
+\code{build_richness_density()}. Must contain the columns \code{richness}
+and the column named in \code{group_var}.}
 
-\item{group_var}{Character. Column name for grouping (y-axis). Must exist
-in \code{richness_density}.}
+\item{group_var}{Character. Name of the grouping column in
+\code{richness_density} (e.g., \code{"landcover"}, \code{"region"}).}
 
-\item{show_median}{Logical. If \code{TRUE}, draws a vertical line at the
-median of each group's distribution. Defaults to \code{TRUE}.}
+\item{show_median}{Logical. If \code{TRUE} (default), draws a vertical
+line at the median of each group's density.}
 
-\item{alpha}{Numeric. Fill transparency for density ridges. Defaults to
-\code{0.7}.}
+\item{alpha}{Numeric. Fill transparency for the density ridges.
+Defaults to \code{0.7}.}
 
-\item{scale}{Numeric. Degree of overlap between ridges. Defaults to
-\code{1.5}.}
+\item{scale}{Numeric. Overlap scale between ridges, passed to
+\code{ggridges::geom_density_ridges()}. Defaults to \code{1.5}.}
 
-\item{palette}{Character vector of 2 or more hex colors used to interpolate
-the group fill palette. The number of colors is set automatically from
-the number of unique groups. Defaults to
-\code{c("#008AA1", "#B90078", "#00D973")}.}
+\item{palette}{Character vector of 2 or more hex colors used as anchor
+points for interpolation. Defaults to
+\code{c("#008AA1", "#B90078", "#00D973")}. Ignored if \code{color_map}
+is supplied.}
+
+\item{color_map}{Optional named character vector mapping specific category
+names (matching the values in \code{group_var}) to specific hex colors.
+Use this for full manual control (e.g., a fixed color convention across
+projects). If supplied, takes priority over \code{palette} and every
+category present in the data must have an entry in \code{color_map}.
+Defaults to \code{NULL}.}
 
 \item{title}{Character or \code{NULL}. Plot title. Defaults to \code{NULL}.}
 
@@ -47,20 +55,44 @@ the number of unique groups. Defaults to
 \item{y_label}{Character or \code{NULL}. Y-axis label. Defaults to
 \code{NULL}.}
 
-\item{text_color}{Character. Hex color for axis text. Defaults to
-\code{"#1B3644"}.}
+\item{text_color}{Character. Hex color for axis text and titles.
+Defaults to \code{"#1B3644"}.}
 }
 \value{
 A \code{ggplot2} object.
 }
 \description{
-Generates a ridgeline density plot of posterior richness samples, grouped
-by a categorical variable. Groups are ordered from lowest to highest median
-richness. Suitable for comparing richness distributions across regions,
-habitat types, or other discrete groupings.
+Generates a ridgeline (joyplot) density plot of posterior species richness
+samples grouped by a categorical variable (e.g., region, landcover,
+habitat). Y-axis position of each group is ordered by median richness
+(low to high), producing a visual gradient. Fill color is assigned
+independently of that ordering, so that a given category keeps the same
+color across different plots or data subsets.
+}
+\details{
+Two independent orderings are used:
+\itemize{
+\item \strong{Y-axis position}: groups are ordered by median richness
+(ascending), producing the classic ridgeline visual gradient from
+low to high richness.
+\item \strong{Fill color}: when \code{color_map} is \code{NULL},
+colors are interpolated from \code{palette} and assigned by
+\strong{alphabetical order} of category names, not by median rank.
+Because a category's name doesn't change between datasets or
+subsets, its color stays the same across different plots even when
+its median richness rank shifts — solving the common problem of the
+same category (e.g., \code{"Grassland"}) receiving different colors
+in different figures.
+}
+
+Use \code{color_map} instead of \code{palette} only when you need to
+override specific categories with fixed brand or convention colors
+(e.g., always green for forest, always blue for water) regardless of
+alphabetical order. The two arguments are not meant to be combined:
+if \code{color_map} is supplied, \code{palette} is ignored entirely.
 }
 \seealso{
-\code{\link{build_richness_density}}
+\code{\link{build_richness_density}}, \code{\link{extract_richness}}
 }
 \author{
 Jose W. Ribeiro Jr. ("Xuleta")
