@@ -1,75 +1,89 @@
-#' Build a reindexed visits array by removing empty time steps per site
+#' Build a Reindexed Visits Array by Removing Empty Time Steps per Site
 #'
-#' Converts a species × sites × time array with a global time structure
-#' (e.g., calendar dates) into a compacted array where each site retains
-#' only its valid sampling events. Empty time steps (i.e., columns where
-#' all species have \code{NA}) are removed per site, and the resulting
-#' visits are re-aligned by sampling order. The output array is padded
-#' with \code{NA} to accommodate the site with the highest number of
-#' valid visits.
+#' Compacts a species x sites x time detection array by removing time
+#' steps (dates) with no sampling effort at a given site, realigning the
+#' remaining visits by sampling order. This produces a visit-indexed array
+#' (\code{[species x sites x max_visits]}) suitable as input to
+#' occupancy models that expect a fixed number of replicate visits per
+#' site, rather than a full calendar date sequence.
 #'
 #' @author Jose W. Ribeiro Jr. ("Xuleta")
 #'
-#' @param y A 3-dimensional array of dimensions \code{[species × sites × time]},
-#'   where \code{NA} indicates the absence of a sampling event for a given
-#'   species, site, and time step.
+#' @param y A 3-dimensional detection array \code{[species x sites x
+#'   dates]}, as returned by \code{\link{build_detection_array}} or
+#'   \code{\link{build_detection_array_from_events}}. A date column with
+#'   \code{NA} for every species at a given site is treated as "no
+#'   sampling effort" and is dropped for that site.
 #'
-#' @return A 3-dimensional array of dimensions \code{[species × sites × max_visits]},
-#'   where \code{max_visits} is the maximum number of valid visits recorded
-#'   across all sites. Sites with fewer visits are padded with \code{NA}.
+#' @return A 3-dimensional array \code{[species x sites x max_visits]},
+#'   where \code{max_visits} is the largest number of valid (non-NA)
+#'   sampling occasions found across all sites. Sites with fewer valid
+#'   visits than \code{max_visits} are padded with \code{NA} in the
+#'   remaining visit slots. Sites with zero valid visits (no sampling
+#'   effort recorded at all) remain entirely \code{NA} across all visit
+#'   slots, rather than causing an error.
 #'
 #' @details
-#' This function is particularly useful when detection data are structured
-#' around a global calendar (e.g., daily or weekly time steps) but individual
-#' sites were sampled on different and irregular schedules. Removing empty
-#' time steps reduces array size and improves computational efficiency in
-#' downstream occupancy models, while fully preserving each site's detection
-#' history.
+#' For each site, dates are treated as "no effort" (dropped) only when
+#' every species has \code{NA} on that date — this mirrors the array
+#' convention where \code{NA} = no sampling effort, \code{0} = effort
+#' with no detection, \code{1} = detected.
 #'
-#' A time step is considered valid for a given site if at least one species
-#' has a non-\code{NA} value in that column of the site matrix.
-#'
-#' @note
-#' When a site has only one valid time step, subsetting the site matrix with
-#' a scalar index would normally cause R to drop the dimension and return a
-#' vector instead of a matrix. This is handled internally by wrapping the
-#' result in \code{matrix()} with explicit \code{nrow} and \code{ncol},
-#' ensuring consistent 2D structure regardless of the number of valid visits.
+#' The function is robust to two edge cases that can otherwise cause
+#' silent errors: a single-species array (\code{dim(y)[1] == 1}) and
+#' sites with zero valid visits. Both are explicitly guarded against by
+#' coercing slices back to matrices with known dimensions and by skipping
+#' the assignment step for all-NA sites.
 #'
 #' @seealso \code{\link{build_detection_array}},
-#'   \code{\link{aggregate_detection_windows}}
+#'   \code{\link{build_detection_array_from_events}},
+#'   \code{\link{build_reindexed_dates}}
 #'
 #' @export
 build_reindexed_visits <- function(y) {
 
-  sp    <- dim(y)[1]
-  sites <- dim(y)[2]
+  stopifnot(
+    "y must be a 3D array" = is.array(y) && length(dim(y)) == 3
+  )
 
-  y_new_list <- list()
+  n_species <- dim(y)[1]
+  n_sites   <- dim(y)[2]
+  n_dates   <- dim(y)[3]
 
-  for (i in 1:sites) {
+  y_new_list <- vector("list", n_sites)
 
-    site_matrix <- y[, i, ]
-    keep        <- which(colSums(!is.na(site_matrix)) > 0)
+  for (i in seq_len(n_sites)) {
 
-    # Force matrix even when keep has length 1 (avoids vector coercion).
-    # Without this, R drops the dimension and returns a vector when only
-    # one valid time step exists, causing ncol() to return NULL and
-    # breaking the subsequent max(sapply(..., ncol)) call.
+    # Explicitly coerce back to a matrix [species x dates] — y[, i, ] would
+    # silently drop to a vector when n_species == 1 or when only one date
+    # remains, breaking colSums() below.
+    site_matrix <- matrix(y[, i, ], nrow = n_species, ncol = n_dates)
+
+    # A date has effort at this site if at least one species is non-NA
+    keep <- which(colSums(!is.na(site_matrix)) > 0)
+
     y_new_list[[i]] <- matrix(
-      site_matrix[, keep],
-      nrow = sp,
+      site_matrix[, keep, drop = FALSE],
+      nrow = n_species,
       ncol = length(keep)
     )
   }
 
-  max_visits <- max(sapply(y_new_list, ncol))
+  max_visits <- max(vapply(y_new_list, ncol, integer(1)))
 
-  y_new <- array(NA, dim = c(sp, sites, max_visits))
+  y_new <- array(NA, dim = c(n_species, n_sites, max_visits))
 
-  for (i in 1:sites) {
-    y_new[, i, 1:ncol(y_new_list[[i]])] <- y_new_list[[i]]
+  for (i in seq_len(n_sites)) {
+
+    n_visits_i <- ncol(y_new_list[[i]])
+
+    # Sites with zero valid visits (no sampling effort recorded at all)
+    # are skipped here and simply remain all-NA in y_new — assigning a
+    # zero-column slice would otherwise error.
+    if (n_visits_i > 0) {
+      y_new[, i, seq_len(n_visits_i)] <- y_new_list[[i]]
+    }
   }
 
-  return(y_new)
+  y_new
 }

@@ -2,50 +2,50 @@
 % Please edit documentation in R/build_reindexed_visits.R
 \name{build_reindexed_visits}
 \alias{build_reindexed_visits}
-\title{Build a reindexed visits array by removing empty time steps per site}
+\title{Build a Reindexed Visits Array by Removing Empty Time Steps per Site}
 \usage{
 build_reindexed_visits(y)
 }
 \arguments{
-\item{y}{A 3-dimensional array of dimensions \code{[species × sites × time]},
-where \code{NA} indicates the absence of a sampling event for a given
-species, site, and time step.}
+\item{y}{A 3-dimensional detection array \code{[species x sites x
+dates]}, as returned by \code{\link{build_detection_array}} or
+\code{\link{build_detection_array_from_events}}. A date column with
+\code{NA} for every species at a given site is treated as "no
+sampling effort" and is dropped for that site.}
 }
 \value{
-A 3-dimensional array of dimensions \code{[species × sites × max_visits]},
-  where \code{max_visits} is the maximum number of valid visits recorded
-across all sites. Sites with fewer visits are padded with \code{NA}.
+A 3-dimensional array \code{[species x sites x max_visits]},
+where \code{max_visits} is the largest number of valid (non-NA)
+sampling occasions found across all sites. Sites with fewer valid
+visits than \code{max_visits} are padded with \code{NA} in the
+remaining visit slots. Sites with zero valid visits (no sampling
+effort recorded at all) remain entirely \code{NA} across all visit
+slots, rather than causing an error.
 }
 \description{
-Converts a species × sites × time array with a global time structure
-(e.g., calendar dates) into a compacted array where each site retains
-only its valid sampling events. Empty time steps (i.e., columns where
-all species have \code{NA}) are removed per site, and the resulting
-visits are re-aligned by sampling order. The output array is padded
-with \code{NA} to accommodate the site with the highest number of
-valid visits.
+Compacts a species x sites x time detection array by removing time
+steps (dates) with no sampling effort at a given site, realigning the
+remaining visits by sampling order. This produces a visit-indexed array
+(\code{[species x sites x max_visits]}) suitable as input to
+occupancy models that expect a fixed number of replicate visits per
+site, rather than a full calendar date sequence.
 }
 \details{
-This function is particularly useful when detection data are structured
-around a global calendar (e.g., daily or weekly time steps) but individual
-sites were sampled on different and irregular schedules. Removing empty
-time steps reduces array size and improves computational efficiency in
-downstream occupancy models, while fully preserving each site's detection
-history.
+For each site, dates are treated as "no effort" (dropped) only when
+every species has \code{NA} on that date — this mirrors the array
+convention where \code{NA} = no sampling effort, \code{0} = effort
+with no detection, \code{1} = detected.
 
-A time step is considered valid for a given site if at least one species
-has a non-\code{NA} value in that column of the site matrix.
-}
-\note{
-When a site has only one valid time step, subsetting the site matrix with
-a scalar index would normally cause R to drop the dimension and return a
-vector instead of a matrix. This is handled internally by wrapping the
-result in \code{matrix()} with explicit \code{nrow} and \code{ncol},
-ensuring consistent 2D structure regardless of the number of valid visits.
+The function is robust to two edge cases that can otherwise cause
+silent errors: a single-species array (\code{dim(y)[1] == 1}) and
+sites with zero valid visits. Both are explicitly guarded against by
+coercing slices back to matrices with known dimensions and by skipping
+the assignment step for all-NA sites.
 }
 \seealso{
 \code{\link{build_detection_array}},
-\code{\link{aggregate_detection_windows}}
+\code{\link{build_detection_array_from_events}},
+\code{\link{build_reindexed_dates}}
 }
 \author{
 Jose W. Ribeiro Jr. ("Xuleta")

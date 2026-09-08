@@ -115,7 +115,6 @@ audData_s1 <- wmhelpers::build_detection_data(
 )
 }
 
-
 Processing steps:
 \enumerate{
 \item Normalise site names to lowercase.

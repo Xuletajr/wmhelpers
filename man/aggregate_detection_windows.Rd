@@ -20,7 +20,7 @@ days (fewer than \code{window}).}
 }
 \value{
 A 3D array of dimensions \code{[species × sites × n_windows]}
-  with aggregated detection histories, where
+with aggregated detection histories, where
 \code{n_windows = ceiling(n_days / window)}.
 The last window may span fewer than \code{window} days for sites
 whose total sampled days are not an exact multiple of \code{window}.
