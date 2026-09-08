@@ -10,10 +10,12 @@ build_reindexed_dates(y)
 build_reindexed_dates(y)
 }
 \arguments{
-\item{y}{A 3-dimensional array of dimensions \code{[species x sites x time]}
-with named dimensions. \code{dimnames(y)[[2]]} must contain site names and
-\code{dimnames(y)[[3]]} must contain date identifiers (e.g., Julian day
-as character strings).}
+\item{y}{A 3-dimensional detection array \code{[species x sites x
+dates]}, as returned by \code{\link{build_detection_array}} or
+\code{\link{build_detection_array_from_events}}. Must have non-NULL
+\code{dimnames} for the sites (2nd) and dates (3rd) dimensions. A
+date column with \code{NA} for every species at a given site is
+treated as "no sampling effort" and is dropped for that site.}
 }
 \value{
 A character matrix \code{[sites x max_visits]} of sampling
@@ -25,11 +27,14 @@ effort recorded at all) remain entirely \code{NA} across all visit
 columns, rather than causing an error. Row names are site names;
 column names are \code{"rep_1"}, \code{"rep_2"}, etc.
 
-A character matrix of dimensions \code{[sites x max_visits]}, where
-\code{max_visits} is the maximum number of valid visits across all sites.
-Row names correspond to site names and column names follow the pattern
-\code{rep_1}, \code{rep_2}, ..., \code{rep_K}. Sites with fewer valid
-visits are padded with \code{NA}.
+A character matrix \code{[sites x max_visits]} of sampling
+dates, where \code{max_visits} is the largest number of valid
+(non-NA) sampling occasions found across all sites. Sites with fewer
+valid visits than \code{max_visits} are padded with \code{NA} in the
+remaining visit columns. Sites with zero valid visits (no sampling
+effort recorded at all) remain entirely \code{NA} across all visit
+columns, rather than causing an error. Row names are site names;
+column names are \code{"rep_1"}, \code{"rep_2"}, etc.
 }
 \description{
 Extracts and reindexes sampling dates from a detection array into a
@@ -39,14 +44,12 @@ structure produced by \code{\link{build_reindexed_visits}} — visit
 \code{k} in this matrix corresponds to the same sampling occasion as
 visit \code{k} in the reindexed detection array.
 
-Extracts and reindexes sampling dates from a species x sites x time
-array, returning a 2D matrix (sites x visits) where each row contains
-only the dates of valid sampling occasions for that site. Valid occasions
-are those where at least one species has a non-\code{NA} detection value.
-The result is aligned to the same visit structure produced by
-\code{build_reindexed_visits()}, making it suitable for use as a
-date covariate in multi-species occupancy models (e.g., via
-\code{spOccupancy}).
+Extracts and reindexes sampling dates from a detection array into a
+\code{[sites x visits]} matrix, dropping time steps with no sampling
+effort at a given site. The resulting matrix is aligned to the visit
+structure produced by \code{\link{build_reindexed_visits}} — visit
+\code{k} in this matrix corresponds to the same sampling occasion as
+visit \code{k} in the reindexed detection array.
 }
 \details{
 For each site, dates are treated as "no effort" (dropped) only when
@@ -62,14 +65,18 @@ sites with zero valid visits. Both are explicitly guarded against by
 coercing slices back to matrices with known dimensions and by skipping
 the assignment step for all-NA sites.
 
-This function is the date-alignment counterpart of
-\code{build_reindexed_visits()} and must be applied to the same input
-array \code{y} to ensure that detection histories and date covariates
-share an identical visit structure. Misalignment between the two outputs
-will cause errors or silent inconsistencies in downstream occupancy models.
+For each site, dates are treated as "no effort" (dropped) only when
+every species has \code{NA} on that date — this mirrors the array
+convention where \code{NA} = no sampling effort, \code{0} = effort
+with no detection, \code{1} = detected. This is the same effort-per-date
+logic used by \code{\link{build_reindexed_visits}}, so the two
+functions produce aligned outputs when applied to the same \code{y}.
 
-A sampling occasion is considered valid for a given site if at least one
-species has a non-\code{NA} value in that time step of the site matrix.
+The function is robust to two edge cases that can otherwise cause
+silent errors: a single-species array (\code{dim(y)[1] == 1}) and
+sites with zero valid visits. Both are explicitly guarded against by
+coercing slices back to matrices with known dimensions and by skipping
+the assignment step for all-NA sites.
 }
 \seealso{
 \code{\link{build_reindexed_visits}},
