@@ -3,6 +3,7 @@
 export(aggregate_detection_windows)
 export(build_deployment_table)
 export(build_detection_array)
+export(build_detection_array_from_events)
 export(build_detection_data)
 export(build_occ_sequences)
 export(build_occ_summary)
