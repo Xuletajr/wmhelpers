@@ -42,8 +42,9 @@ Default is \code{"I(days^2)"}.}
 model (1 = first method, 2 = second, etc.). Used to select the correct
 column block from \code{alpha.comm.samples} by position, avoiding
 ambiguity caused by duplicate column names across methods (e.g., two
-\code{"(Intercept)"} columns). For single-method models, the default
-\code{1L} requires no change.}
+\code{"(Intercept)"} columns). For single-method models, \code{X.p} is a
+plain matrix (not a list) and \code{method_index} must be left at the
+default \code{1L}.}
 }
 \value{
 A named list:
@@ -69,13 +70,23 @@ applied to the linear predictor:
 
 where \eqn{x} is the standardized Julian day.
 
-In integrated models, \code{alpha.comm.samples} contains one column block
-per detection method. Column names are frequently duplicated across methods
-(e.g., two \code{"(Intercept)"} columns — one per method). Indexing by name
-in such cases would silently return the wrong columns. This function selects
-the correct block by cumulative position using \code{X.p[[method_index]]}
-to determine each block's size, making name-based lookup unnecessary and
-safe.
+\code{out_bestmodel$X.p} takes one of two shapes depending on the model:
+\itemize{
+\item \strong{Integrated multi-method models}: \code{X.p} is a
+\emph{list}, one design matrix per detection method.
+\code{alpha.comm.samples} then contains one column block per method,
+and column names are frequently duplicated across methods (e.g., two
+\code{"(Intercept)"} columns — one per method). Indexing by name alone
+would silently return the wrong columns, so this function selects the
+correct block by cumulative position, using each element of \code{X.p}
+to determine that method's block size.
+\item \strong{Single-method models}: \code{X.p} is a plain \emph{matrix},
+not a list — there is only one block, spanning all of its columns.
+\code{method_index} must be \code{1L} in this case (the only valid
+value, since there is no second method to index).
+}
+The two cases are detected automatically via \code{is.list(out_bestmodel$X.p)};
+no argument needs to change between them beyond \code{method_index} itself.
 
 For integrated models, the recommended calls are:
 \preformatted{
@@ -103,6 +114,21 @@ det_results_cam <- predict_detection_julian(
   n_pred         = 100,
   nsamp          = nsamp,
   method_index   = 2L
+)
+}
+
+For single-method models (\code{X.p} is a matrix), \code{method_index}
+stays at its default:
+\preformatted{
+det_results <- predict_detection_julian(
+  out_bestmodel  = out_bestmodel,
+  julian_day     = matrix(julian_day_raw, ncol = 1),
+  m_julian       = mean(julian_day_raw, na.rm = TRUE),
+  sd_julian      = sd(julian_day_raw, na.rm = TRUE),
+  linear_coef    = "day",
+  quadratic_coef = "I(day^2)",
+  n_pred         = 100,
+  nsamp          = nsamp
 )
 }
 }

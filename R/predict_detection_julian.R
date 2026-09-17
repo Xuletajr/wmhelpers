@@ -24,8 +24,9 @@
 #'   model (1 = first method, 2 = second, etc.). Used to select the correct
 #'   column block from \code{alpha.comm.samples} by position, avoiding
 #'   ambiguity caused by duplicate column names across methods (e.g., two
-#'   \code{"(Intercept)"} columns). For single-method models, the default
-#'   \code{1L} requires no change.
+#'   \code{"(Intercept)"} columns). For single-method models, \code{X.p} is a
+#'   plain matrix (not a list) and \code{method_index} must be left at the
+#'   default \code{1L}.
 #'
 #' @return A named list:
 #' \describe{
@@ -44,13 +45,23 @@
 #'
 #' where \eqn{x} is the standardized Julian day.
 #'
-#' In integrated models, \code{alpha.comm.samples} contains one column block
-#' per detection method. Column names are frequently duplicated across methods
-#' (e.g., two \code{"(Intercept)"} columns — one per method). Indexing by name
-#' in such cases would silently return the wrong columns. This function selects
-#' the correct block by cumulative position using \code{X.p[[method_index]]}
-#' to determine each block's size, making name-based lookup unnecessary and
-#' safe.
+#' \code{out_bestmodel$X.p} takes one of two shapes depending on the model:
+#' \itemize{
+#'   \item \strong{Integrated multi-method models}: \code{X.p} is a
+#'     \emph{list}, one design matrix per detection method.
+#'     \code{alpha.comm.samples} then contains one column block per method,
+#'     and column names are frequently duplicated across methods (e.g., two
+#'     \code{"(Intercept)"} columns — one per method). Indexing by name alone
+#'     would silently return the wrong columns, so this function selects the
+#'     correct block by cumulative position, using each element of \code{X.p}
+#'     to determine that method's block size.
+#'   \item \strong{Single-method models}: \code{X.p} is a plain \emph{matrix},
+#'     not a list — there is only one block, spanning all of its columns.
+#'     \code{method_index} must be \code{1L} in this case (the only valid
+#'     value, since there is no second method to index).
+#' }
+#' The two cases are detected automatically via \code{is.list(out_bestmodel$X.p)};
+#' no argument needs to change between them beyond \code{method_index} itself.
 #'
 #' For integrated models, the recommended calls are:
 #' \preformatted{
@@ -81,6 +92,21 @@
 #' )
 #' }
 #'
+#' For single-method models (\code{X.p} is a matrix), \code{method_index}
+#' stays at its default:
+#' \preformatted{
+#' det_results <- predict_detection_julian(
+#'   out_bestmodel  = out_bestmodel,
+#'   julian_day     = matrix(julian_day_raw, ncol = 1),
+#'   m_julian       = mean(julian_day_raw, na.rm = TRUE),
+#'   sd_julian      = sd(julian_day_raw, na.rm = TRUE),
+#'   linear_coef    = "day",
+#'   quadratic_coef = "I(day^2)",
+#'   n_pred         = 100,
+#'   nsamp          = nsamp
+#' )
+#' }
+#'
 #' @importFrom stats plogis quantile
 #'
 #' @export
@@ -97,6 +123,8 @@ predict_detection_julian <- function(
 ) {
 
   # ── Input validation ───────────────────────────────────────────────────────
+  # method_index's validity depends on whether X.p is a list (checked below,
+  # once we know which case applies) -- not validated up front here.
   stopifnot(
     "out_bestmodel must contain alpha.comm.samples" =
       !is.null(out_bestmodel$alpha.comm.samples),
@@ -108,23 +136,42 @@ predict_detection_julian <- function(
     "n_pred must be numeric"                        = is.numeric(n_pred),
     "nsamp must be numeric"                         = is.numeric(nsamp),
     "method_index must be a single integer"         = is.numeric(method_index) &&
-      length(method_index) == 1,
-    "method_index must be a valid method position"  =
-      method_index >= 1L && method_index <= length(out_bestmodel$X.p)
+      length(method_index) == 1
   )
 
-  # ── Select community samples for the target method ─────────────────────────
-  # alpha.comm.samples contains one column block per detection method.
-  # Column names are duplicated across methods (e.g., two "(Intercept)").
-  # Block boundaries are computed from cumulative block sizes via X.p to
-  # avoid silent errors from name-based indexing on duplicate column names.
   alpha_comm <- out_bestmodel$alpha.comm.samples
 
-  block_sizes  <- sapply(out_bestmodel$X.p, ncol)
-  block_starts <- c(1, cumsum(block_sizes[-length(block_sizes)]) + 1)
-
-  col_start <- block_starts[method_index]
-  col_end   <- col_start + block_sizes[method_index] - 1
+  # ── Select community samples for the target method ─────────────────────────
+  # X.p is a LIST (one design matrix per method) for integrated multi-method
+  # models: alpha.comm.samples then contains one column block per method, and
+  # column names are frequently duplicated across methods (e.g., two
+  # "(Intercept)" columns). Block boundaries are computed from cumulative
+  # block sizes via X.p to avoid silent errors from name-based indexing on
+  # duplicate column names.
+  #
+  # For a single-method model, X.p is a plain MATRIX, not a list -- there is
+  # only one block, spanning all of alpha.comm.samples' columns. Attempting
+  # sapply(X.p, ncol) in that case would iterate element-by-element over the
+  # matrix's individual cells (a matrix is a plain vector with a dim
+  # attribute) instead of over "methods", returning a list of NULLs and
+  # failing downstream -- so the two cases are branched explicitly.
+  if (is.list(out_bestmodel$X.p)) {
+    stopifnot(
+      "method_index must be a valid method position" =
+        method_index >= 1L && method_index <= length(out_bestmodel$X.p)
+    )
+    block_sizes  <- sapply(out_bestmodel$X.p, ncol)
+    block_starts <- c(1, cumsum(block_sizes[-length(block_sizes)]) + 1)
+    col_start <- block_starts[method_index]
+    col_end   <- col_start + block_sizes[method_index] - 1
+  } else {
+    stopifnot(
+      "method_index must be 1 for a single-method model (X.p is not a list)" =
+        method_index == 1L
+    )
+    col_start <- 1
+    col_end   <- ncol(out_bestmodel$X.p)
+  }
 
   alpha_samples <- alpha_comm[, col_start:col_end, drop = FALSE]
 
