@@ -8,6 +8,7 @@ plot_detection_julian(
   pred_det_df,
   start_date,
   end_date,
+  origin_date = start_date,
   color_ribbon = "#CCCCCC",
   color_line = "#1B3A5C",
   ribbon_alpha = 0.55,
@@ -22,10 +23,17 @@ plot_detection_julian(
 \code{predict_detection_julian()$pred_det_df}. Must contain columns:
 \code{seq_julian}, \code{mean}, \code{criL}, \code{criU}.}
 
-\item{start_date}{Date or character (coercible to \code{Date}). Reference
-start date corresponding to Julian day = 1.}
+\item{start_date}{Date or character (coercible to \code{Date}). Lower
+x-axis limit (the earliest date to display).}
 
-\item{end_date}{Date or character. End date for x-axis limits.}
+\item{end_date}{Date or character. Upper x-axis limit (the latest date to
+display).}
+
+\item{origin_date}{Date or character. The calendar date that \code{seq_julian
+== 1} corresponds to -- i.e. the arithmetic anchor used to convert raw
+Julian-day values into calendar dates. This is \strong{not} always the
+same as \code{start_date}; see Details. Defaults to \code{start_date} for
+backward compatibility with the year-boundary use case described below.}
 
 \item{color_ribbon}{Character. Fill color for the credible interval ribbon.
 Default is \code{"#CCCCCC"}.}
@@ -48,6 +56,31 @@ Invisibly returns the \code{ggplot} object.
 Converts a sequence of Julian days to calendar dates and plots the
 community-level detection probability as a line with a credible interval
 ribbon.
+}
+\details{
+\code{pred_det_df$seq_julian} (produced by \code{predict_detection_julian()})
+holds raw Julian-day values, and the date shown for each point is computed
+as \code{origin_date + (seq_julian - 1)}. What \code{origin_date} should be
+depends on how \code{julian_day_raw} was built upstream, in the project's
+own data-preparation step -- there are two legitimate conventions:
+\itemize{
+\item \strong{Calendar day-of-year, no year wraparound} (e.g. within-year
+seasons that don't cross a year boundary): \code{seq_julian} is the
+ordinary day-of-year (1-366), and \code{origin_date} must be
+\strong{January 1st} of a reference year -- \emph{not} \code{start_date}.
+Using \code{start_date} here double-counts the offset, since
+\code{start_date} is itself already Jan 1 plus some number of days.
+\item \strong{Project spans a year boundary} (e.g. a Nov-Mar season) and
+\code{julian_day_raw} was deliberately re-anchored upstream so that day
+1 = the project's start date (avoiding the 365 -> 0 -> 90 jump a
+calendar day-of-year would otherwise produce): \code{origin_date} is
+the actual project start date, i.e. the same value as \code{start_date}.
+}
+\code{start_date} and \code{end_date} always control only the x-axis
+display limits (via \code{scale_x_date(limits = ...)}) and are independent
+of \code{origin_date}; conflating the two (as this function used to, before
+\code{origin_date} was a separate argument) silently double-counts the
+offset whenever the first convention above applies.
 }
 \author{
 Thiago Bicudo
