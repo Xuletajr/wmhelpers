@@ -31,49 +31,55 @@
 #' @importFrom stats sd quantile
 #'
 #' @export
-extract_psi_stats <- function(out_bestmodel, site_names) {
-
-  # ── Input validation ───────────────────────────────────────────────
+# Extract psi stats
+extract_psi_stats <- function(out_bestmodel, site_names, year_names = NULL) {
   stopifnot(
-    "Model must contain psi.samples" = "psi.samples" %in% names(out_bestmodel),
-    "Model must contain sp.names"    = "sp.names" %in% names(out_bestmodel),
-    "site_names must be character"   = is.character(site_names)
+    `Model must contain psi.samples` = "psi.samples" %in% names(out_bestmodel),
+    `Model must contain sp.names` = "sp.names" %in% names(out_bestmodel),
+    `site_names must be character` = is.character(site_names)
   )
 
   psi_samples <- out_bestmodel$psi.samples
+  n_dims <- length(dim(psi_samples))
 
-  # Check dimensions
-  if (length(dim(psi_samples)) != 3) {
-    stop("psi.samples must be a 3D array: samples × species × sites")
+  if (!n_dims %in% c(3, 4)) {
+    stop("psi.samples must be 3D (samples x species x sites, single-season) ",
+         "or 4D (samples x species x sites x years, multi-season).")
   }
 
-  n_species <- dim(psi_samples)[2]
-  n_sites   <- dim(psi_samples)[3]
-
+  n_sites <- dim(psi_samples)[3]
+  sp_names <- out_bestmodel$sp.names
   if (length(site_names) != n_sites) {
     stop("Length of site_names must match number of sites in psi.samples")
   }
 
-  # ── Compute statistics ─────────────────────────────────────────────
-  psi_mean <- apply(psi_samples, c(2, 3), mean, na.rm = TRUE)
-  psi_sd   <- apply(psi_samples, c(2, 3), sd,   na.rm = TRUE)
+  if (n_dims == 3) {
+    # Single-season: original behaviour, byte-identical output.
+    margin <- c(2, 3)
+    dn <- list(sp_names, site_names)
+  } else {
+    # Multi-season: keep the year dimension in every summary statistic too.
+    n_years <- dim(psi_samples)[4]
+    if (is.null(year_names)) {
+      stop("psi.samples is 4D (multi-season) -- `year_names` must be supplied ",
+           "(e.g. dimnames(data.list$y)[[3]]).")
+    }
+    if (length(year_names) != n_years) {
+      stop("Length of year_names must match number of years in psi.samples")
+    }
+    margin <- c(2, 3, 4)
+    dn <- list(sp_names, site_names, year_names)
+  }
 
-  psi_cri025 <- apply(psi_samples, c(2, 3), quantile, probs = 0.025, na.rm = TRUE)
-  psi_cri975 <- apply(psi_samples, c(2, 3), quantile, probs = 0.975, na.rm = TRUE)
+  psi_mean   <- apply(psi_samples, margin, mean, na.rm = TRUE)
+  psi_sd     <- apply(psi_samples, margin, sd, na.rm = TRUE)
+  psi_cri025 <- apply(psi_samples, margin, quantile, probs = 0.025, na.rm = TRUE)
+  psi_cri975 <- apply(psi_samples, margin, quantile, probs = 0.975, na.rm = TRUE)
 
-  # ── Assign dimnames ────────────────────────────────────────────────
-  sp_names <- out_bestmodel$sp.names
+  dimnames(psi_mean) <- dn
+  dimnames(psi_sd) <- dn
+  dimnames(psi_cri025) <- dn
+  dimnames(psi_cri975) <- dn
 
-  dimnames(psi_mean)   <- list(sp_names, site_names)
-  dimnames(psi_sd)     <- list(sp_names, site_names)
-  dimnames(psi_cri025) <- list(sp_names, site_names)
-  dimnames(psi_cri975) <- list(sp_names, site_names)
-
-  # ── Return as list ─────────────────────────────────────────────────
-  return(list(
-    mean   = psi_mean,
-    sd     = psi_sd,
-    cri025 = psi_cri025,
-    cri975 = psi_cri975
-  ))
+  list(mean = psi_mean, sd = psi_sd, cri025 = psi_cri025, cri975 = psi_cri975)
 }

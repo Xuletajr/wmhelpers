@@ -24,61 +24,50 @@
 #'
 #' @export
 export_psi_tables <- function(psi_stats, output_dir, project_name) {
-
-  # Input validation
   stopifnot(
-    "psi_stats must be a list" = is.list(psi_stats),
-    "output_dir must be character" = is.character(output_dir),
-    "project_name must be character" = is.character(project_name)
+    `psi_stats must be a list` = is.list(psi_stats),
+    `output_dir must be character` = is.character(output_dir),
+    `project_name must be character` = is.character(project_name)
   )
-
   required_names <- c("mean", "sd", "cri025", "cri975")
-
   if (!all(required_names %in% names(psi_stats))) {
     stop("psi_stats must contain: mean, sd, cri025, cri975")
   }
+  if (!grepl("/$", output_dir)) output_dir <- paste0(output_dir, "/")
+  if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
 
-  # Ensure output directory ends with "/"
-  if (!grepl("/$", output_dir)) {
-    output_dir <- paste0(output_dir, "/")
-  }
-
-  if (!dir.exists(output_dir)) {
-    dir.create(output_dir, recursive = TRUE)
-  }
-
-  # Helper: format and export table
   export_one <- function(mat, stat_name) {
+    n_dims <- length(dim(mat))
 
-    # Convert to data.frame
-    df <- as.data.frame(mat)
+    if (n_dims == 2) {
+      # species x sites -> one row per site (unchanged from the original
+      # single-season behaviour)
+      df <- as.data.frame(t(mat))
+      df$sites <- rownames(df)
+      df <- df[, c("sites", setdiff(names(df), "sites"))]
+      rownames(df) <- NULL
+    } else if (n_dims == 3) {
+      # species x sites x years -> one row per site-year, columns = species.
+      # as.data.frame.table() gives each array dimension its OWN column (via
+      # its dimnames), instead of relying on an implicit "site.year" string
+      # concatenation that would need re-parsing downstream -- and would
+      # break if a site name ever contained a period.
+      long <- as.data.frame.table(mat, responseName = "value", stringsAsFactors = FALSE)
+      names(long)[1:3] <- c("species", "sites", "year")
+      df <- tidyr::pivot_wider(long, names_from = species, values_from = value) |>
+        dplyr::relocate(sites, year)
+    } else {
+      stop("psi_stats element must be 2D (species x sites) or 3D ",
+           "(species x sites x years); got ", n_dims, " dimensions.")
+    }
 
-    # Transpose: sites x species
-    df_t <- as.data.frame(t(df))
-
-    # Add sites column
-    df_t$sites <- rownames(df_t)
-
-    # Reorder columns
-    df_t <- df_t[, c("sites", setdiff(names(df_t), "sites"))]
-
-    # Clean rownames
-    rownames(df_t) <- NULL
-
-    # File name
-    file_name <- paste0(
-      output_dir,
-      "psi_", stat_name, "_", project_name, ".csv"
-    )
-
-    utils::write.csv(df_t, file = file_name, row.names = FALSE)
+    file_name <- paste0(output_dir, "psi_", stat_name, "_", project_name, ".csv")
+    utils::write.csv(df, file = file_name, row.names = FALSE)
   }
 
-  # Export all statistics
   export_one(psi_stats$mean, "mean")
-  export_one(psi_stats$sd,   "sd")
+  export_one(psi_stats$sd, "sd")
   export_one(psi_stats$cri025, "cri025")
   export_one(psi_stats$cri975, "cri975")
-
-  return(invisible(NULL))
+  invisible(NULL)
 }

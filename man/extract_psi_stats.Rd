@@ -4,7 +4,7 @@
 \alias{extract_psi_stats}
 \title{Extract Site-Level Occupancy Probability Statistics}
 \usage{
-extract_psi_stats(out_bestmodel, site_names)
+extract_psi_stats(out_bestmodel, site_names, year_names = NULL)
 }
 \arguments{
 \item{out_bestmodel}{Fitted model object containing \code{psi.samples}
