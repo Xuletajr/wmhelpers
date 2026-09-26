@@ -12,6 +12,8 @@ plot_detection_julian(
   color_ribbon = "#CCCCCC",
   color_line = "#1B3A5C",
   ribbon_alpha = 0.55,
+  axis_title_size = 14,
+  axis_text_size = 12,
   output_path = NULL,
   width = 28,
   height = 24,
@@ -41,6 +43,12 @@ Default is \code{"#CCCCCC"}.}
 \item{color_line}{Character. Line color. Default is \code{"#1B3A5C"}.}
 
 \item{ribbon_alpha}{Numeric. Transparency of ribbon. Default is \code{0.55}.}
+
+\item{axis_title_size}{Numeric. Font size (in points) for axis titles
+("Date" and "Detection probability"). Default is \code{14}.}
+
+\item{axis_text_size}{Numeric. Font size (in points) for axis tick labels
+(date values and probability values). Default is \code{12}.}
 
 \item{output_path}{Character. If provided, saves the plot as PNG.
 Default is \code{NULL}.}

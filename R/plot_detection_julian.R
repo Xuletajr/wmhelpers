@@ -29,6 +29,12 @@
 #'
 #' @param ribbon_alpha Numeric. Transparency of ribbon. Default is \code{0.55}.
 #'
+#' @param axis_title_size Numeric. Font size (in points) for axis titles
+#'   ("Date" and "Detection probability"). Default is \code{14}.
+#'
+#' @param axis_text_size Numeric. Font size (in points) for axis tick labels
+#'   (date values and probability values). Default is \code{12}.
+#'
 #' @param output_path Character. If provided, saves the plot as PNG.
 #'   Default is \code{NULL}.
 #'
@@ -63,7 +69,7 @@
 #' \code{origin_date} was a separate argument) silently double-counts the
 #' offset whenever the first convention above applies.
 #'
-#' @importFrom ggplot2 ggplot aes geom_ribbon geom_line theme_minimal labs ggsave scale_x_date
+#' @importFrom ggplot2 ggplot aes geom_ribbon geom_line theme_minimal theme labs ggsave scale_x_date element_text
 #'
 #' @export
 plot_detection_julian <- function(
@@ -74,6 +80,8 @@ plot_detection_julian <- function(
     color_ribbon = "#CCCCCC",
     color_line = "#1B3A5C",
     ribbon_alpha = 0.55,
+    axis_title_size = 14,
+    axis_text_size = 12,
     output_path = NULL,
     width = 28,
     height = 24,
@@ -108,6 +116,10 @@ plot_detection_julian <- function(
     ) +
     ggplot2::geom_line(color = color_line, linewidth = 1) +
     ggplot2::theme_minimal() +
+    ggplot2::theme(
+      axis.title = ggplot2::element_text(size = axis_title_size),
+      axis.text = ggplot2::element_text(size = axis_text_size)
+    ) +
     ggplot2::labs(
       x = "Date",
       y = "Detection probability"
