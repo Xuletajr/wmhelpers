@@ -35,6 +35,11 @@
 #' @param axis_text_size Numeric. Font size (in points) for axis tick labels
 #'   (date values and probability values). Default is \code{12}.
 #'
+#' @param plot_margin Numeric vector of length 4. Margins around the plot
+#'   in points: \code{c(top, right, bottom, left)}. Default is
+#'   \code{c(10, 20, 10, 10)}, providing extra space on the right for
+#'   date labels at the x-axis edge.
+#'
 #' @param output_path Character. If provided, saves the plot as PNG.
 #'   Default is \code{NULL}.
 #'
@@ -69,7 +74,7 @@
 #' \code{origin_date} was a separate argument) silently double-counts the
 #' offset whenever the first convention above applies.
 #'
-#' @importFrom ggplot2 ggplot aes geom_ribbon geom_line theme_minimal theme labs ggsave scale_x_date element_text
+#' @importFrom ggplot2 ggplot aes geom_ribbon geom_line theme_minimal theme labs ggsave scale_x_date element_text margin
 #'
 #' @export
 plot_detection_julian <- function(
@@ -82,6 +87,7 @@ plot_detection_julian <- function(
     ribbon_alpha = 0.55,
     axis_title_size = 14,
     axis_text_size = 12,
+    plot_margin = c(10, 20, 10, 10),
     output_path = NULL,
     width = 28,
     height = 24,
@@ -118,7 +124,11 @@ plot_detection_julian <- function(
     ggplot2::theme_minimal() +
     ggplot2::theme(
       axis.title = ggplot2::element_text(size = axis_title_size),
-      axis.text = ggplot2::element_text(size = axis_text_size)
+      axis.text = ggplot2::element_text(size = axis_text_size),
+      plot.margin = ggplot2::margin(
+        t = plot_margin[1], r = plot_margin[2],
+        b = plot_margin[3], l = plot_margin[4], unit = "pt"
+      )
     ) +
     ggplot2::labs(
       x = "Date",

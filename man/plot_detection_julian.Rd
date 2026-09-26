@@ -14,6 +14,7 @@ plot_detection_julian(
   ribbon_alpha = 0.55,
   axis_title_size = 14,
   axis_text_size = 12,
+  plot_margin = c(10, 20, 10, 10),
   output_path = NULL,
   width = 28,
   height = 24,
@@ -49,6 +50,11 @@ Default is \code{"#CCCCCC"}.}
 
 \item{axis_text_size}{Numeric. Font size (in points) for axis tick labels
 (date values and probability values). Default is \code{12}.}
+
+\item{plot_margin}{Numeric vector of length 4. Margins around the plot
+in points: \code{c(top, right, bottom, left)}. Default is
+\code{c(10, 20, 10, 10)}, providing extra space on the right for
+date labels at the x-axis edge.}
 
 \item{output_path}{Character. If provided, saves the plot as PNG.
 Default is \code{NULL}.}
