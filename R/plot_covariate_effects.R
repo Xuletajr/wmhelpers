@@ -55,8 +55,17 @@
 #' @param dodge_labels Logical. If \code{TRUE}, y-axis labels are staggered
 #'   using \code{guide_axis(n.dodge = 2)} to reduce overlap. Defaults to
 #'   \code{FALSE}.
-#' @param text.size Numeric. Base font size for axis text. Must be a positive
-#'   number.
+#' @param text.size Numeric. Base font size (in points) for y-axis species
+#'   names and x-axis tick labels. Must be a positive number.
+#' @param title_size Numeric or \code{NULL}. Font size (in points) for the
+#'   plot title. If \code{NULL}, defaults to \code{text.size * 1.7}.
+#' @param axis_title_size Numeric or \code{NULL}. Font size (in points) for
+#'   axis titles (x and y axis labels). If \code{NULL}, defaults to
+#'   \code{text.size * 1.5}.
+#' @param plot_width Numeric or \code{NULL}. Width of the exported PNG in
+#'   inches. If \code{NULL}, uses default dimensions based on data scope.
+#' @param plot_height Numeric or \code{NULL}. Height of the exported PNG in
+#'   inches. If \code{NULL}, uses default dimensions based on data scope.
 #' @param filename_prefix Character. Prefix for the output filename.
 #'   Defaults to \code{"species"}.
 #' @param tag Character or \code{NULL}. Optional string appended to the
@@ -98,8 +107,9 @@
 #'
 #' High-resolution output (30 cm x 55 cm at \code{2 * dpi}) is used when
 #' \code{taxa} is \code{NULL} or \code{"ALL"}, or when \code{split_by} is
-#' provided. Standard resolution (12 x 18 inches at \code{dpi}) is used
-#' otherwise.
+#' provided, unless overridden by explicit \code{plot_width} and
+#' \code{plot_height} values. Standard resolution (12 x 18 inches at \code{dpi})
+#' is used otherwise, unless overridden.
 #'
 #' Typical usage in an integrated model workflow:
 #' \preformatted{
@@ -111,34 +121,40 @@
 #'
 #' # Audio - all species by guild, split invertivores from other guilds
 #' plot_covariate_effects(
-#'   data         = alpha_cov_aud,
-#'   covariate    = "days",
-#'   model_type   = "detection",
-#'   xlabel_dict  = xlabel_dict,
-#'   facet_var    = "guild",
-#'   split_by     = "Invertivore",
-#'   taxa         = "ALL",
-#'   text.size    = 9,
-#'   tag          = "audio",
-#'   output_dir   = config$output_figures,
-#'   project_name = config$project_name,
-#'   dpi          = config$dpi
+#'   data          = alpha_cov_aud,
+#'   covariate     = "days",
+#'   model_type    = "detection",
+#'   xlabel_dict   = xlabel_dict,
+#'   facet_var     = "guild",
+#'   split_by      = "Invertivore",
+#'   taxa          = "ALL",
+#'   text.size     = 9,
+#'   title_size    = 18,
+#'   axis_title_size = 14,
+#'   plot_width    = 10,
+#'   plot_height   = 16,
+#'   tag           = "audio",
+#'   output_dir    = config$output_figures,
+#'   project_name  = config$project_name,
+#'   dpi           = config$dpi
 #' )
 #'
-#' # Camera trap - mammals, no split
+#' # Camera trap - mammals, no split, compact layout
 #' plot_covariate_effects(
-#'   data         = alpha_cov_cam,
-#'   covariate    = "numD",
-#'   model_type   = "detection",
-#'   xlabel_dict  = xlabel_dict,
-#'   facet_var    = NULL,
-#'   split_by     = NULL,
-#'   taxa         = "Mammalia",
-#'   text.size    = 9,
-#'   tag          = "camtrap",
-#'   output_dir   = config$output_figures,
-#'   project_name = config$project_name,
-#'   dpi          = config$dpi
+#'   data          = alpha_cov_cam,
+#'   covariate     = "numD",
+#'   model_type    = "detection",
+#'   xlabel_dict   = xlabel_dict,
+#'   facet_var     = NULL,
+#'   split_by      = NULL,
+#'   taxa          = "Mammalia",
+#'   text.size     = 10,
+#'   plot_width    = 8,
+#'   plot_height   = 10,
+#'   tag           = "camtrap",
+#'   output_dir    = config$output_figures,
+#'   project_name  = config$project_name,
+#'   dpi           = config$dpi
 #' )
 #' }
 #'
@@ -160,6 +176,10 @@ plot_covariate_effects <- function(data,
                                    taxa            = NULL,
                                    dodge_labels    = FALSE,
                                    text.size,
+                                   title_size      = NULL,
+                                   axis_title_size = NULL,
+                                   plot_width      = NULL,
+                                   plot_height     = NULL,
                                    filename_prefix = "species",
                                    tag             = NULL,
                                    output_dir      = getwd(),
@@ -183,6 +203,15 @@ plot_covariate_effects <- function(data,
       length(output_dir) == 1,
     "project_name must be a character"             = is.character(project_name),
     "dpi must be a positive number"                = is.numeric(dpi) && dpi > 0,
+    "text.size must be a positive number"          = is.numeric(text.size) && text.size > 0,
+    "title_size must be NULL or a positive number" = is.null(title_size) ||
+      (is.numeric(title_size) && title_size > 0),
+    "axis_title_size must be NULL or a positive number" = is.null(axis_title_size) ||
+      (is.numeric(axis_title_size) && axis_title_size > 0),
+    "plot_width must be NULL or a positive number" = is.null(plot_width) ||
+      (is.numeric(plot_width) && plot_width > 0),
+    "plot_height must be NULL or a positive number" = is.null(plot_height) ||
+      (is.numeric(plot_height) && plot_height > 0),
     "color_neg must be a character string"         = is.character(color_neg),
     "color_none must be a character string"        = is.character(color_none),
     "color_pos must be a character string"         = is.character(color_pos),
@@ -223,27 +252,32 @@ plot_covariate_effects <- function(data,
     subset <- plot_subsets[[i]]
 
     plots[[i]] <- .create_and_save_plot(
-      data_subset        = subset$data,
-      suffix             = subset$suffix,
-      covariate          = covariate,
-      x_axis_label       = x_axis_label,
-      facet_var          = facet_var,
-      taxa_original      = taxa_original,
-      model_type         = model_type,
-      dodge_labels       = dodge_labels,
-      base_text_size     = text.size,
-      text_size_override = subset$text_size_override,
-      title              = title,
-      filename_prefix    = filename_prefix,
-      tag                = tag,
-      output_dir         = output_dir,
-      project_name       = project_name,
-      dpi                = dpi,
-      color_neg          = color_neg,
-      color_none         = color_none,
-      color_pos          = color_pos,
-      color_strip        = color_strip,
-      color_text         = color_text
+      data_subset         = subset$data,
+      suffix              = subset$suffix,
+      covariate           = covariate,
+      x_axis_label        = x_axis_label,
+      facet_var           = facet_var,
+      taxa_original       = taxa_original,
+      model_type          = model_type,
+      dodge_labels        = dodge_labels,
+      base_text_size      = text.size,
+      text_size_override  = subset$text_size_override,
+      title               = title,
+      title_size_param    = title_size,
+      axis_title_size_param = axis_title_size,
+      filename_prefix     = filename_prefix,
+      tag                 = tag,
+      output_dir          = output_dir,
+      project_name        = project_name,
+      dpi                 = dpi,
+      plot_width          = plot_width,
+      plot_height         = plot_height,
+      split_by            = split_by,
+      color_neg           = color_neg,
+      color_none          = color_none,
+      color_pos           = color_pos,
+      color_strip         = color_strip,
+      color_text          = color_text
     )
   }
 
@@ -342,8 +376,24 @@ plot_covariate_effects <- function(data,
 
 
 .create_base_plot <- function(data, x_axis_label, dodge_labels, text_size,
-                              plot_title,
+                              plot_title, title_size_param, axis_title_size_param,
                               color_neg, color_none, color_pos) {
+
+  # ── Calculate font sizes, with sensible defaults ──────────────────────────
+  title_size <- if (!is.null(title_size_param)) {
+    title_size_param
+  } else {
+    text_size * 1.7
+  }
+
+  axis_title_size <- if (!is.null(axis_title_size_param)) {
+    axis_title_size_param
+  } else {
+    text_size * 1.5
+  }
+
+  legend_text_size <- text_size * 1.2
+
   data %>%
     ggplot2::ggplot() +
     ggplot2::geom_point(
@@ -379,17 +429,17 @@ plot_covariate_effects <- function(data,
       }
     ) +
     ggplot2::theme(
-      axis.title.x      = ggplot2::element_text(size = 18),
+      axis.title.x      = ggplot2::element_text(size = axis_title_size),
       axis.text.x       = ggplot2::element_text(size = text_size),
       axis.text.y       = ggplot2::element_text(size   = text_size,
                                                 hjust  = 1,
                                                 colour = "black"),
       legend.background = ggplot2::element_rect(colour    = "black",
                                                 linewidth = 0.5),
-      legend.text       = ggplot2::element_text(size = 14),
+      legend.text       = ggplot2::element_text(size = legend_text_size),
       legend.position   = "top",
       legend.title      = ggplot2::element_blank(),
-      plot.title        = ggplot2::element_text(size  = 20,
+      plot.title        = ggplot2::element_text(size  = title_size,
                                                 hjust = 0.5,
                                                 face  = "bold")
     )
@@ -489,25 +539,32 @@ plot_covariate_effects <- function(data,
 }
 
 
-.save_plot_to_file <- function(plot, filename, high_quality, dpi) {
-
+.get_default_dimensions <- function(high_quality) {
   if (high_quality) {
-    grDevices::png(paste0(filename, ".png"),
-                   width     = 30 / 2.54,
-                   height    = 55 / 2.54,
-                   units     = "in",
-                   pointsize = 6,
-                   bg        = "white",
-                   res       = dpi * 2)
+    list(width = 30 / 2.54, height = 55 / 2.54)
   } else {
-    grDevices::png(paste0(filename, ".png"),
-                   width     = 12,
-                   height    = 18,
-                   units     = "in",
-                   pointsize = 6,
-                   bg        = "white",
-                   res       = dpi)
+    list(width = 12, height = 18)
   }
+}
+
+
+.save_plot_to_file <- function(plot, filename, high_quality, dpi,
+                               plot_width = NULL, plot_height = NULL) {
+
+  defaults <- .get_default_dimensions(high_quality)
+
+  final_width  <- if (!is.null(plot_width))  plot_width  else defaults$width
+  final_height <- if (!is.null(plot_height)) plot_height else defaults$height
+
+  grDevices::png(
+    paste0(filename, ".png"),
+    width     = final_width,
+    height    = final_height,
+    units     = "in",
+    pointsize = 6,
+    bg        = "white",
+    res       = if (high_quality) dpi * 2 else dpi
+  )
 
   print(plot)
   grDevices::dev.off()
@@ -518,8 +575,11 @@ plot_covariate_effects <- function(data,
                                   x_axis_label, facet_var, taxa_original,
                                   model_type, dodge_labels, base_text_size,
                                   text_size_override = NULL, title = NULL,
+                                  title_size_param = NULL, axis_title_size_param = NULL,
                                   filename_prefix, tag,
                                   output_dir, project_name, dpi,
+                                  plot_width = NULL, plot_height = NULL,
+                                  split_by = NULL,
                                   color_neg, color_none, color_pos,
                                   color_strip, color_text) {
 
@@ -528,6 +588,7 @@ plot_covariate_effects <- function(data,
 
   plot <- .create_base_plot(data_subset, x_axis_label, dodge_labels,
                             text_size, plot_title,
+                            title_size_param, axis_title_size_param,
                             color_neg, color_none, color_pos)
 
   plot <- .add_facets(plot, facet_var, color_strip, color_text)
@@ -536,9 +597,9 @@ plot_covariate_effects <- function(data,
                                       taxa_original, suffix, filename_prefix,
                                       tag, output_dir, project_name)
 
-  high_quality <- .should_use_high_quality(taxa_original, suffix)
+  high_quality <- .should_use_high_quality(taxa_original, split_by)
 
-  .save_plot_to_file(plot, filename, high_quality, dpi)
+  .save_plot_to_file(plot, filename, high_quality, dpi, plot_width, plot_height)
 
   message("Plot saved: ", basename(paste0(filename, ".png")))
 

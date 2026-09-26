@@ -15,6 +15,10 @@ plot_covariate_effects(
   taxa = NULL,
   dodge_labels = FALSE,
   text.size,
+  title_size = NULL,
+  axis_title_size = NULL,
+  plot_width = NULL,
+  plot_height = NULL,
   filename_prefix = "species",
   tag = NULL,
   output_dir = getwd(),
@@ -83,8 +87,21 @@ include all species. Defaults to \code{NULL}.}
 using \code{guide_axis(n.dodge = 2)} to reduce overlap. Defaults to
 \code{FALSE}.}
 
-\item{text.size}{Numeric. Base font size for axis text. Must be a positive
-number.}
+\item{text.size}{Numeric. Base font size (in points) for y-axis species
+names and x-axis tick labels. Must be a positive number.}
+
+\item{title_size}{Numeric or \code{NULL}. Font size (in points) for the
+plot title. If \code{NULL}, defaults to \code{text.size * 1.7}.}
+
+\item{axis_title_size}{Numeric or \code{NULL}. Font size (in points) for
+axis titles (x and y axis labels). If \code{NULL}, defaults to
+\code{text.size * 1.5}.}
+
+\item{plot_width}{Numeric or \code{NULL}. Width of the exported PNG in
+inches. If \code{NULL}, uses default dimensions based on data scope.}
+
+\item{plot_height}{Numeric or \code{NULL}. Height of the exported PNG in
+inches. If \code{NULL}, uses default dimensions based on data scope.}
 
 \item{filename_prefix}{Character. Prefix for the output filename.
 Defaults to \code{"species"}.}
@@ -145,8 +162,9 @@ subset is named \code{"Other_<facet_var>"} (e.g., \code{"Other_guild"}).
 
 High-resolution output (30 cm x 55 cm at \code{2 * dpi}) is used when
 \code{taxa} is \code{NULL} or \code{"ALL"}, or when \code{split_by} is
-provided. Standard resolution (12 x 18 inches at \code{dpi}) is used
-otherwise.
+provided, unless overridden by explicit \code{plot_width} and
+\code{plot_height} values. Standard resolution (12 x 18 inches at \code{dpi})
+is used otherwise, unless overridden.
 
 Typical usage in an integrated model workflow:
 \preformatted{
@@ -158,34 +176,40 @@ xlabel_dict <- c(
 
 # Audio - all species by guild, split invertivores from other guilds
 plot_covariate_effects(
-  data         = alpha_cov_aud,
-  covariate    = "days",
-  model_type   = "detection",
-  xlabel_dict  = xlabel_dict,
-  facet_var    = "guild",
-  split_by     = "Invertivore",
-  taxa         = "ALL",
-  text.size    = 9,
-  tag          = "audio",
-  output_dir   = config$output_figures,
-  project_name = config$project_name,
-  dpi          = config$dpi
+  data          = alpha_cov_aud,
+  covariate     = "days",
+  model_type    = "detection",
+  xlabel_dict   = xlabel_dict,
+  facet_var     = "guild",
+  split_by      = "Invertivore",
+  taxa          = "ALL",
+  text.size     = 9,
+  title_size    = 18,
+  axis_title_size = 14,
+  plot_width    = 10,
+  plot_height   = 16,
+  tag           = "audio",
+  output_dir    = config$output_figures,
+  project_name  = config$project_name,
+  dpi           = config$dpi
 )
 
-# Camera trap - mammals, no split
+# Camera trap - mammals, no split, compact layout
 plot_covariate_effects(
-  data         = alpha_cov_cam,
-  covariate    = "numD",
-  model_type   = "detection",
-  xlabel_dict  = xlabel_dict,
-  facet_var    = NULL,
-  split_by     = NULL,
-  taxa         = "Mammalia",
-  text.size    = 9,
-  tag          = "camtrap",
-  output_dir   = config$output_figures,
-  project_name = config$project_name,
-  dpi          = config$dpi
+  data          = alpha_cov_cam,
+  covariate     = "numD",
+  model_type    = "detection",
+  xlabel_dict   = xlabel_dict,
+  facet_var     = NULL,
+  split_by      = NULL,
+  taxa          = "Mammalia",
+  text.size     = 10,
+  plot_width    = 8,
+  plot_height   = 10,
+  tag           = "camtrap",
+  output_dir    = config$output_figures,
+  project_name  = config$project_name,
+  dpi           = config$dpi
 )
 }
 }
