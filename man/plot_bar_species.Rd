@@ -97,6 +97,11 @@ abbreviations (CR, EN, VU, NT, LC, DD, NE).
 is appended to the label.
 }
 }
+\seealso{
+\code{\link{summarise_detections}},
+\code{\link{plot_detection_summary}},
+\code{\link{export_detection_plots}}
+}
 \author{
 Jose W. Ribeiro Jr. ("Xuleta")
 }
