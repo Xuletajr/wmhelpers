@@ -18,7 +18,9 @@ plot_bar_species(
   bar_color = "#00D973",
   xlab = NULL,
   subtitle = NULL,
-  breaks_x = NULL
+  breaks_x = NULL,
+  axis_text_size = 11,
+  axis_title_size = 12
 )
 }
 \arguments{
@@ -61,6 +63,12 @@ instead of the most detected (default = \code{FALSE}).}
 \item{subtitle}{Character string for the plot subtitle.}
 
 \item{breaks_x}{Optional numeric. Number of breaks for the x-axis.}
+
+\item{axis_text_size}{Numeric. Font size for axis labels and species names
+(default = \code{11}).}
+
+\item{axis_title_size}{Numeric. Font size for axis titles
+(default = \code{12}).}
 }
 \value{
 A \code{ggplot2} object.
